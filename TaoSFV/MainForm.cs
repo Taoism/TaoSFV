@@ -10,6 +10,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using TaoSFV.Verification;
+using System.Threading.Tasks;
 using TaoSFV.Hash;
 using TaoSFV.Localization;
 using TaoSFV.Model.Settings;
@@ -209,23 +211,10 @@ export results to text file
                 }
                 else if (_initialCreate)
                 {
-                    switch (args[1].ToLower())
-                    {
-                        case "sfv":
-                            _initialCreateChecksumType = ChecksumType.SFV;
-                            break;
-
-                        case "md5":
-                            _initialCreateChecksumType = ChecksumType.MD5;
-                            break;
-
-                        case "sha1":
-                            _initialCreateChecksumType = ChecksumType.SHA1;
-                            break;
-
-                        default:
-                            throw new Exception(string.Format("{0} not implemented", args[1]));
-                    }
+                    ChecksumAlgorithm createAlgorithm = ChecksumAlgorithm.FromExtension(args[1]);
+                    if (createAlgorithm == null)
+                        throw new Exception(string.Format("{0} not implemented", args[1]));
+                    _initialCreateChecksumType = createAlgorithm.Type;
 
                     EngageCreateTimer(files);
                 }
@@ -758,7 +747,7 @@ export results to text file
             Cursor.Current = Cursors.WaitCursor;
             using (OpenFileDialog ofd = new OpenFileDialog())
             {
-                ofd.Filter = "*.md5;*.sfv;*.sha1|*.md5;*.sfv;*.sha1";
+                ofd.Filter = ChecksumAlgorithm.DialogPattern + "|" + ChecksumAlgorithm.DialogPattern;
                 ofd.Multiselect = multiSelect;
                 Cursor.Current = Cursors.Default;
                 DialogResult res = ofd.ShowDialog();
@@ -768,6 +757,20 @@ export results to text file
             }
 
             return fileNames.ToList();
+        }
+
+        private void miVerifyFolder_Click(object sender, EventArgs e)
+        {
+            using (FolderBrowserDialog dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = Language.MainForm.VerifyFolder_Description;
+                dialog.UseDescriptionForTitle = true;
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return;
+
+                // a folder goes through the same path as a dropped folder: every checksum file in it and its subfolders
+                EngageDropTimer(new List<string> { dialog.SelectedPath });
+            }
         }
 
         private void miOpen_Click(object sender, EventArgs e)
@@ -789,8 +792,7 @@ export results to text file
                 {
                     foreach (string dirFile in dirFiles)
                     {
-                        string dirFileExt = Path.GetExtension(dirFile).ToLower();
-                        if (dirFileExt == ".md5" || dirFileExt == ".sfv" || dirFileExt == ".sha1")
+                        if (ChecksumAlgorithm.IsChecksumFile(dirFile))
                             verifyFiles.Add(dirFile);
                     }
                 }
@@ -815,23 +817,13 @@ export results to text file
                 return false;
             }
 
-            string baseDirectory = Path.GetDirectoryName(fileName);
-
-            string ext = Path.GetExtension(fileName).ToLower();
-            ChecksumType setType;
-            if (ext == ".md5")
-                setType = ChecksumType.MD5;
-            else if (ext == ".sfv")
-                setType = ChecksumType.SFV;
-            else if (ext == ".sha1")
-                setType = ChecksumType.SHA1;
-            else
+            if (!ChecksumAlgorithm.IsChecksumFile(fileName))
                 return false;
 
-            ChecksumSet set = new ChecksumSet(fileName, baseDirectory, setType);
-
-            SetStatusText(string.Format(Language.MainForm.Status_LoadingFile, set.VerificationFileName));
+            SetStatusText(string.Format(Language.MainForm.Status_LoadingFile, fileName));
             Application.DoEvents();
+
+            ChecksumSet set = ChecksumSetLoader.Parse(fileName);
 
             Program.Settings.AddRecentFile(fileName);
 
@@ -845,52 +837,18 @@ export results to text file
                     Application.DoEvents();
                 }
 
-                string[] lines = ChecksumFileFormat.ReadAllLines(fileName);
-
                 ListViewGroup group = new ListViewGroup(lvwFiles.Groups.Count.ToString(), Path.GetFileName(fileName));
                 lvwFiles.Groups.Add(group);
 
-                StringBuilder comment = new StringBuilder();
-                for (int i = 0; i < lines.Length; i++)
+                foreach (ChecksumFile file in set.Files)
                 {
-                    string line = lines[i];
-                    if (line == null)
-                        continue;
-
-                    line = line.Trim();
-                    if (string.IsNullOrEmpty(line))
-                        continue;
-
-                    if (ChecksumFileFormat.IsComment(line, set.Type))
-                    {
-                        comment.AppendLine(line.Substring(1, line.Length - 1));
-                    }
-                    else
-                    {
-                        ChecksumFile file = new ChecksumFile(set);
-
-                        string chkFileName;
-                        string chkChecksum;
-                        if (!ChecksumFileFormat.TryParseLine(line, set.Type, out chkFileName, out chkChecksum))
-                            throw new InvalidChecksumFileException(fileName, set.Type, lines, i);
-
-                        file.FileName = chkFileName;
-                        file.OriginalChecksum = chkChecksum;
-
-                        // NOTE: Looks like hkSFV ignores this setting for checking
-                        //if (!Program.Settings.General.Recursive && file.FileName.Contains('\\'))
-                        //	continue;
-
-                        set.Files.Add(file);
-
-                        ListViewItem item = new ListViewItem(new[] { file.FileName, file.Guid });
-                        item.Tag = file;
-                        item.StateImageIndex = 0;
-                        item.Group = group;
-                        lvwFiles.Items.Add(item);
-                    }
+                    ListViewItem item = new ListViewItem(new[] { file.FileName, file.Guid });
+                    item.Tag = file;
+                    item.StateImageIndex = 0;
+                    item.Group = group;
+                    lvwFiles.Items.Add(item);
                 }
-                set.Comments = comment.ToString();
+
                 if (lvwFiles.Items.Count != 0)
                     lvwFiles.AutoResizeColumn(0, ColumnHeaderAutoResizeStyle.ColumnContent);
             }
@@ -909,11 +867,8 @@ export results to text file
             if (getFileInfo)
             {
                 int lastPercent = 0;
-                set.TotalSize = 0;
-                for (int i = 0; i < set.Files.Count; i++)
+                ChecksumSetLoader.ResolveFiles(set, percent =>
                 {
-                    int percent = (i * 100 / set.Files.Count);
-
                     if (percent / 5 > lastPercent / 5)
                     {
                         SetStatusText(string.Format(Language.MainForm.Status_LoadingFilePercentage, set.VerificationFileName, (percent / 5) * 5));
@@ -921,18 +876,7 @@ export results to text file
 
                         lastPercent = percent;
                     }
-
-                    ChecksumFile file = set.Files[i];
-
-                    string fullFileName = Path.Combine(set.Directory, file.FileName);
-
-                    if (File.Exists(fullFileName))
-                    {
-                        FileInfo fileInfo = TryGetNewFileInfo(fullFileName);
-                        file.FileInfo = fileInfo;
-                        set.TotalSize += fileInfo.Length;
-                    }
-                }
+                });
             }
 
             _totalSizeOfSets += set.TotalSize;
@@ -1042,7 +986,7 @@ export results to text file
             }
             else
             {
-                _queueStop = true;
+                StopWork();
             }
         }
 
@@ -1052,14 +996,43 @@ export results to text file
         private int _files_bad;
         private int _set_index;
 
-        private void Verify()
+        private CancellationTokenSource _verifyCancel;
+        private readonly PauseGate _pauseGate = new PauseGate();
+
+        private async void Verify()
+        {
+            await VerifyAsync();
+        }
+
+        /// <summary>
+        /// Checks every queued set. Files are hashed on the thread pool (several at once on SSDs) while
+        /// this method, on the UI thread, starts work in order and applies results as they finish.
+        /// </summary>
+        private async Task VerifyAsync()
         {
             if (_sets.Count == 0)
                 return;
 
             DateTime start = DateTime.Now;
-            long bytesProcessed = 0;
             _workingOnList = true;
+            _verifyCancel = new CancellationTokenSource();
+            _pauseGate.Resume();
+            VerifyContext context = new VerifyContext(_verifyCancel.Token, _pauseGate);
+            VerifyOptions options = VerifyOptions.FromSettings(Program.Settings);
+
+            ChecksumFile currentFile = null;
+            Timer progressTimer = new Timer { Interval = 100 };
+            progressTimer.Tick += (sender, e) =>
+            {
+                if (_pause)
+                    return;
+
+                UpdateProgressText(context.BytesProcessed, start);
+                double? fileProgress = currentFile == null ? null : context.GetFileProgress(currentFile);
+                if (fileProgress != null)
+                    progressBar1.Value = (int)(fileProgress.Value * 100);
+            };
+
             try
             {
                 SetStatusText(Language.MainForm.Status_Working);
@@ -1079,6 +1052,8 @@ export results to text file
                 _files_bad = 0;
                 _files_missing = 0;
 
+                progressTimer.Start();
+
                 for (_set_index = 0; _set_index < _sets.Count; _set_index++)
                 {
                     if (_queueStop)
@@ -1090,34 +1065,21 @@ export results to text file
                     txtComments.Text = set.Comments;
 
                     lvwFiles.Focus();
-                    Application.DoEvents();
 
-                    List<ChecksumFile> cache = Cache.GetCache(set.Type, set.Directory);
-
-                    long speed = 0;
+                    IReadOnlyDictionary<string, ChecksumFile> cache = await Task.Run(() => FileVerifier.LoadCache(set, options));
+                    int parallelism = DiskInfo.GetParallelism(set.Directory);
+                    List<Task<ChecksumFile>> running = new List<Task<ChecksumFile>>();
 
                     for (int i = 0; i < set.Files.Count; i++)
                     {
                         if (_queueHideGood)
                             ApplyHideGood();
 
-                        if (_pause)
+                        while (_pause && !_queueStop)
                         {
-                            while (_pause && !_queueStop)
-                            {
-                                if (_queueHideGood)
-                                    ApplyHideGood();
-
-                                Thread.Sleep(50);
-                                Application.DoEvents();
-                            }
-
-                            if (_pause)
-                                Unpause();
-
-                            int pauseTotalPercent = _totalSizeOfSets == 0 ? 100 : (int)((bytesProcessed * 100) / _totalSizeOfSets);
-                            SetStatusText(string.Format(Language.MainForm.Status_WorkingPercentage, pauseTotalPercent));
-                            Application.DoEvents();
+                            if (_queueHideGood)
+                                ApplyHideGood();
+                            await Task.Delay(50);
                         }
 
                         if (_queueStop)
@@ -1127,243 +1089,39 @@ export results to text file
 
                         ChecksumFile file = set.Files[i];
                         ListViewItem listItem = lvwFiles.FindItemWithText(file.Guid);
+                        if (listItem != null)
+                        {
+                            listItem.Selected = true;
+                            if (Program.Settings.General.AutoScrollFileList)
+                                listItem.EnsureVisible();
+                        }
 
+                        currentFile = file;
                         progressBar1.Value = 0;
-                        listItem.Selected = true;
-                        //lvwFiles.FocusedItem = listItem;
-                        if (Program.Settings.General.AutoScrollFileList)
-                            listItem.EnsureVisible();
-                        //Application.DoEvents();
 
-                        bool checkCacheThisFile = Program.Settings.General.UseCachedResults;
-
-                        // check for .bad if missing
-                        if (file.FileInfo == null)
+                        running.Add(Task.Run(() =>
                         {
-                            string fullFileName = Path.Combine(set.Directory, file.FileName);
-                            string badFileName = fullFileName + ".bad";
-                            if (File.Exists(badFileName))
-                            {
-                                File.Move(badFileName, fullFileName);
-                                file.FileInfo = TryGetNewFileInfo(fullFileName);
-                                checkCacheThisFile = false;
-                            }
-                        }
+                            FileVerifier.Verify(set, file, options, cache, context);
+                            return file;
+                        }));
 
-                        if (file.FileInfo == null)
-                        {
-                            file.State = ChecksumFileState.Missing;
-                            _files_missing++;
-
-                            // Create .missing marker
-                            if (Program.Settings.Check.CreateMissingMarkers)
-                            {
-                                string missingFileName = Path.Combine(set.Directory, file.FileName) + ".missing";
-                                if (!File.Exists(missingFileName))
-                                {
-                                    File.WriteAllBytes(missingFileName, new byte[0]);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            bytesProcessed += file.FileInfo.Length;
-
-                            // Clean up .bad/.missing
-                            if (Program.Settings.Check.CleanupBadMissing)
-                            {
-                                // .missing
-                                string missingFileName = file.FileInfo.FullName + ".missing";
-                                if (File.Exists(missingFileName))
-                                {
-                                    if (TryGetNewFileInfo(missingFileName).Length == 0)
-                                        File.Delete(missingFileName);
-                                }
-
-                                // .bad
-                                string badFileName = file.FileInfo.FullName + ".bad";
-                                if (File.Exists(badFileName))
-                                {
-                                    if (TryGetNewFileInfo(badFileName).Length == 0)
-                                        File.Delete(badFileName);
-                                }
-                            }
-
-                            // Renaming
-                            if (Program.Settings.Check.Renaming != CheckRenaming.None)
-                            {
-                                string realFileName = Path.GetFileName(file.FileInfo.FullName);
-                                string newFileName = null;
-
-                                if (Program.Settings.Check.Renaming == CheckRenaming.Lowercase)
-                                {
-                                    //if (realFileName != realFileName.ToLower())
-                                    newFileName = realFileName.ToLower();
-                                }
-                                else if (Program.Settings.Check.Renaming == CheckRenaming.MatchSet)
-                                {
-                                    string sfvFileName = Path.GetFileName(Path.Combine(set.Directory, file.FileName));
-                                    //if (string.Compare(realFileName, sfvFileName, false) != 0)
-                                    {
-                                        newFileName = sfvFileName;
-                                    }
-                                }
-
-                                if (!string.IsNullOrEmpty(newFileName))
-                                {
-                                    string fullNewFileName = Path.Combine(Path.GetDirectoryName(file.FileInfo.FullName), newFileName);
-
-                                    Random r = new Random();
-                                    string tempFileName;
-                                    do
-                                    {
-                                        tempFileName = string.Format("{0}.{1}", fullNewFileName, r.Next(0, 9999));
-
-                                    } while (File.Exists(tempFileName));
-
-                                    File.Move(file.FileInfo.FullName, tempFileName);
-                                    File.Move(tempFileName, fullNewFileName);
-                                }
-                            }
-
-                            file.CurrentChecksum = null;
-
-                            // Check cache
-                            ChecksumFile foundItem = null;
-                            if (checkCacheThisFile)
-                            {
-                                foreach (ChecksumFile cacheItem in cache)
-                                {
-                                    if (cacheItem.CacheLength == file.FileInfo.Length &&
-                                        string.Compare(cacheItem.FileName, file.FileInfo.FullName, true) == 0)
-                                    {
-                                        TimeSpan delta = cacheItem.CacheLastWriteUtc - GetLastWriteTimeUtc(file.FileInfo);
-                                        if (delta < TimeSpan.FromSeconds(0.01) && delta > TimeSpan.FromSeconds(-0.01))
-                                        {
-                                            file.CurrentChecksum = cacheItem.OriginalChecksum;
-                                            foundItem = cacheItem;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (foundItem != null)
-                            {
-                                cache.Remove(foundItem);
-
-                                // Early check. If cached item fails check, recheck w/o using cache
-                                if (string.Compare(file.CurrentChecksum, file.OriginalChecksum, true) != 0)
-                                {
-                                    file.CurrentChecksum = null;
-                                    foundItem = null;
-                                }
-                            }
-
-                            // Calculate crc32/md5
-                            if (string.IsNullOrEmpty(file.CurrentChecksum))
-                            {
-                                if (set.Type == ChecksumType.MD5)
-                                {
-                                    DateTime speedStart = DateTime.Now;
-
-                                    file.CurrentChecksum = GetChecksumWithProgress(MD5WithProgress, file.FileInfo, speed, bytesProcessed - file.FileInfo.Length, start);
-                                    if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                        continue;
-
-                                    TimeSpan speedSpan = DateTime.Now - speedStart;
-                                    if (file.FileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                        speed = file.FileInfo.Length / (long)speedSpan.TotalSeconds;
-
-                                    if (foundItem == null && Program.Settings.General.UseCachedResults)
-                                        Cache.UpdateMD5Cache(file.FileInfo, file.CurrentChecksum);
-                                }
-                                else if (set.Type == ChecksumType.SFV)
-                                {
-                                    DateTime speedStart = DateTime.Now;
-
-                                    file.CurrentChecksum = GetChecksumWithProgress(CRC32WithProgress, file.FileInfo, speed, bytesProcessed - file.FileInfo.Length, start);
-                                    if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                        continue;
-
-                                    TimeSpan speedSpan = DateTime.Now - speedStart;
-                                    if (file.FileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                        speed = file.FileInfo.Length / (long)speedSpan.TotalSeconds;
-
-                                    if (foundItem == null && Program.Settings.General.UseCachedResults)
-                                        Cache.UpdateSFVCache(file.FileInfo, file.CurrentChecksum);
-                                }
-                                else if (set.Type == ChecksumType.SHA1)
-                                {
-                                    DateTime speedStart = DateTime.Now;
-
-                                    file.CurrentChecksum = GetChecksumWithProgress(SHA1WithProgress, file.FileInfo, speed, bytesProcessed - file.FileInfo.Length, start);
-                                    if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                        continue;
-
-                                    TimeSpan speedSpan = DateTime.Now - speedStart;
-                                    if (file.FileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                        speed = file.FileInfo.Length / (long)speedSpan.TotalSeconds;
-
-                                    if (foundItem == null && Program.Settings.General.UseCachedResults)
-                                        Cache.UpdateSHA1Cache(file.FileInfo, file.CurrentChecksum);
-                                }
-                                else
-                                {
-                                    throw new Exception(string.Format("{0} not implemented", set.Type));
-                                }
-                            }
-
-                            // test if it's ok/bad
-                            if (string.Compare(file.CurrentChecksum, file.OriginalChecksum, true) == 0)
-                            {
-                                file.State = ChecksumFileState.OK;
-                                _files_ok++;
-                            }
-                            else
-                            {
-                                file.State = ChecksumFileState.Bad;
-                                _files_bad++;
-
-                                // Rename to .bad
-                                string changedFileName = file.FileInfo.FullName;
-                                if (Program.Settings.Check.RenameBadFiles)
-                                {
-                                    string badFileName = changedFileName + ".bad";
-                                    if (!File.Exists(badFileName))
-                                    {
-                                        File.Move(changedFileName, badFileName);
-                                        changedFileName = badFileName;
-                                    }
-                                }
-
-                                // Delete failed files
-                                if (Program.Settings.Check.DeleteFailedFiles)
-                                    Program.SafeDelete(changedFileName);
-                            }
-                        }
-
-                        // update status bar, listview, progressbar
-                        UpdateStatusBar();
-
-                        listItem.StateImageIndex = (int)file.State;
-
-                        UpdateProgressBarsAndText(bytesProcessed, start);
-
-                        if (Program.Settings.General.HideGoodFiles && file.State == ChecksumFileState.OK)
-                            lvwFiles.Items.Remove(listItem);
-
-                        Application.DoEvents();
+                        while (running.Count >= parallelism)
+                            await CompleteOneFile(running);
                     }
 
+                    while (running.Count > 0)
+                        await CompleteOneFile(running);
+
+                    if (_queueStop)
+                        break;
+
                     progressBar1.Value = 100;
-                    progressBar2.Value = 100;
 
                     if (Program.Settings.Check.AutoFindRenames && _files_missing != 0)
                     {
                         int tmp;
                         FindRenamedFiles(set, out tmp);
-                        UpdateProgressBarsAndText(bytesProcessed, start);
+                        UpdateProgressBarsAndText(context.BytesProcessed, start);
                     }
 
                     if (_queueHideGood)
@@ -1372,11 +1130,13 @@ export results to text file
                     LoadNewSets();
                 }
 
+                progressTimer.Stop();
+                UpdateProgressText(context.BytesProcessed, start);
+
                 SetStatusText(Language.MainForm.Status_UpdatingCache);
-                Application.DoEvents();
                 TimeSpan timeSpent = DateTime.Now - start;
-                Program.Settings.Statistics.AddStats(_files_ok + _files_bad + _files_missing, _set_index, bytesProcessed / 1024 / 1024, _files_ok, timeSpent);
-                Cache.Clean();
+                Program.Settings.Statistics.AddStats(_files_ok + _files_bad + _files_missing, _set_index, context.BytesProcessed / 1024 / 1024, _files_ok, timeSpent);
+                await Task.Run(() => Cache.Clean());
 
                 if (Program.Settings.Check.AutoCloseWhenDoneChecking)
                 {
@@ -1391,6 +1151,10 @@ export results to text file
             }
             finally
             {
+                progressTimer.Stop();
+                progressTimer.Dispose();
+
+                long bytesProcessed = context.BytesProcessed;
                 TimeSpan totalTime = DateTime.Now - start;
                 decimal totalMB = bytesProcessed / 1024.0m / 1024.0m;
                 int percentGood = _files_parts == 0 ? 0 : (_files_ok * 100) / _files_parts;
@@ -1401,23 +1165,94 @@ export results to text file
                 else
                     statusText = string.Format(Language.MainForm.Status_Finished10MinutesOrMore, percentGood, totalMB, totalTime.Hours, totalTime.Minutes, totalTime.Seconds, mbPerSecond);
 
-                ToolTipIcon icon = percentGood == 100 ? ToolTipIcon.Info : ToolTipIcon.Warning;
-                notifyIcon1.ShowBalloonTip(3000, "TaoSFV", string.Format(Language.MainForm.SystemTray_DoneVerifying, percentGood), icon);
+                if (!IsDisposed)
+                {
+                    ToolTipIcon icon = percentGood == 100 ? ToolTipIcon.Info : ToolTipIcon.Warning;
+                    notifyIcon1.ShowBalloonTip(3000, "TaoSFV", string.Format(Language.MainForm.SystemTray_DoneVerifying, percentGood), icon);
 
-                btnPause.Enabled = false;
-                btnHide.Enabled = false;
-                SetStatusText(statusText);
-                PlayCompleteSound(_files_parts == _files_ok);
+                    if (_pause)
+                        Unpause();
+                    btnPause.Enabled = false;
+                    btnHide.Enabled = false;
+                    SetStatusText(statusText);
+                    PlayCompleteSound(_files_parts == _files_ok);
 
-                ToggleMenuItemsEnabled(true, (_files_missing != 0));
+                    ToggleMenuItemsEnabled(true, (_files_missing != 0));
+
+                    btnGo.Text = Language.MainForm.GoButton;
+                }
 
                 _workingOnList = false;
-                btnGo.Text = Language.MainForm.GoButton;
                 _queueStop = false;
+                _verifyCancel.Dispose();
+                _verifyCancel = null;
             }
         }
 
+        /// <summary>Waits for one running file, applies its result and rethrows its error (after stopping the rest).</summary>
+        private async Task CompleteOneFile(List<Task<ChecksumFile>> running)
+        {
+            Task<ChecksumFile> done = await Task.WhenAny(running);
+            running.Remove(done);
+
+            ChecksumFile file;
+            try
+            {
+                file = await done;
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception)
+            {
+                // same as before: an unreadable file stops the run and shows the error
+                _queueStop = true;
+                _verifyCancel.Cancel();
+                try
+                {
+                    await Task.WhenAll(running);
+                }
+                catch (Exception)
+                {
+                }
+                running.Clear();
+                throw;
+            }
+
+            if (file.State == ChecksumFileState.OK)
+                _files_ok++;
+            else if (file.State == ChecksumFileState.Bad)
+                _files_bad++;
+            else if (file.State == ChecksumFileState.Missing)
+                _files_missing++;
+
+            UpdateStatusBar();
+
+            ListViewItem listItem = lvwFiles.FindItemWithText(file.Guid);
+            if (listItem != null)
+            {
+                listItem.StateImageIndex = (int)file.State;
+
+                if (Program.Settings.General.HideGoodFiles && file.State == ChecksumFileState.OK)
+                    lvwFiles.Items.Remove(listItem);
+            }
+        }
+
+        private void StopWork()
+        {
+            _queueStop = true;
+            if (_verifyCancel != null)
+                _verifyCancel.Cancel();
+        }
+
         private void UpdateProgressBarsAndText(long bytesProcessed, DateTime start)
+        {
+            UpdateProgressText(bytesProcessed, start);
+            Application.DoEvents();
+        }
+
+        private void UpdateProgressText(long bytesProcessed, DateTime start)
         {
             int filesLeft = _files_parts - _files_ok - _files_bad - _files_missing;
             decimal totalPercent = _totalSizeOfSets == 0 ? 100.0m : (bytesProcessed * 100.0m) / _totalSizeOfSets;
@@ -1436,7 +1271,6 @@ export results to text file
 
             string statusText = string.Format(Language.MainForm.Status_ETA, (int)totalPercent, strETA, strElapsed);
             SetStatusText(statusText);
-            Application.DoEvents();
         }
 
         private void ToggleMenuItemsEnabled(bool enabled, bool findRenamedEnabled)
@@ -1444,6 +1278,8 @@ export results to text file
             miNewSFV.Enabled = enabled;
             miNewMD5.Enabled = enabled;
             miNewSHA1.Enabled = enabled;
+            miNewSHA256.Enabled = enabled;
+            miNewSHA512.Enabled = enabled;
             miPreferences.Enabled = enabled;
             miFindRenamedFiles.Enabled = findRenamedEnabled;
             miUseCachedResults.Enabled = enabled;
@@ -1452,11 +1288,11 @@ export results to text file
             lvwFiles.MultiSelect = enabled;
         }
 
-        private string GetChecksumWithProgress(ParameterizedThreadStart pss, FileInfo fileInfo, long speed, long absoluteBytesProcessed, DateTime absoluteStart)
+        private string GetChecksumWithProgress(ChecksumAlgorithm algorithm, FileInfo fileInfo, long speed, long absoluteBytesProcessed, DateTime absoluteStart)
         {
-            FileInfoSpeed fis = new FileInfoSpeed { FileInfo = fileInfo };
+            FileInfoSpeed fis = new FileInfoSpeed { FileInfo = fileInfo, Algorithm = algorithm };
 
-            Thread t = new Thread(pss);
+            Thread t = new Thread(ComputeWithProgress);
             t.IsBackground = true;
             t.Priority = Thread.CurrentThread.Priority;
             t.Start(fis);
@@ -1507,45 +1343,13 @@ export results to text file
             return fis.Checksum;
         }
 
-        private static void MD5WithProgress(object obj)
+        private static void ComputeWithProgress(object obj)
         {
             FileInfoSpeed fis = (FileInfoSpeed)obj;
             try
             {
                 using (FileStream stream = fis.OpenStream())
-                    fis.Checksum = MD5.Calculate(stream);
-            }
-            catch (Exception ex)
-            {
-                fis.Exception = ex;
-            }
-
-            fis.IsDone = true;
-        }
-
-        private static void SHA1WithProgress(object obj)
-        {
-            FileInfoSpeed fis = (FileInfoSpeed)obj;
-            try
-            {
-                using (FileStream stream = fis.OpenStream())
-                    fis.Checksum = SHA1.Calculate(stream);
-            }
-            catch (Exception ex)
-            {
-                fis.Exception = ex;
-            }
-
-            fis.IsDone = true;
-        }
-
-        private static void CRC32WithProgress(object obj)
-        {
-            FileInfoSpeed fis = (FileInfoSpeed)obj;
-            try
-            {
-                using (FileStream stream = fis.OpenStream())
-                    fis.Checksum = CRC32.Calculate(stream);
+                    fis.Checksum = fis.Algorithm.Compute(stream);
             }
             catch (Exception ex)
             {
@@ -1558,6 +1362,7 @@ export results to text file
         private class FileInfoSpeed
         {
             public FileInfo FileInfo { get; set; }
+            public ChecksumAlgorithm Algorithm { get; set; }
             public string Checksum { get; set; }
             public Exception Exception { get; set; }
             public bool IsDone { get; set; }
@@ -1694,46 +1499,16 @@ export results to text file
                             {
                                 FileInfo fileInfo = TryGetNewFileInfo(foundFile);
 
-                                if (set.Type == ChecksumType.MD5)
-                                {
-                                    DateTime speedStart = DateTime.Now;
+                                DateTime speedStart = DateTime.Now;
 
-                                    file.CurrentChecksum = GetChecksumWithProgress(MD5WithProgress, fileInfo, speed, bytesProcessed, start);
-                                    if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                        continue;
+                                file.CurrentChecksum = GetChecksumWithProgress(ChecksumAlgorithm.Get(set.Type), fileInfo, speed, bytesProcessed, start);
+                                if (string.IsNullOrEmpty(file.CurrentChecksum))
+                                    continue;
 
-                                    TimeSpan speedSpan = DateTime.Now - speedStart;
-                                    if (fileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                        speed = fileInfo.Length / (long)speedSpan.TotalSeconds;
-                                }
-                                else if (set.Type == ChecksumType.SFV)
-                                {
-                                    DateTime speedStart = DateTime.Now;
-
-                                    file.CurrentChecksum = GetChecksumWithProgress(CRC32WithProgress, fileInfo, speed, bytesProcessed, start);
-                                    if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                        continue;
-
-                                    TimeSpan speedSpan = DateTime.Now - speedStart;
-                                    if (fileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                        speed = fileInfo.Length / (long)speedSpan.TotalSeconds;
-                                }
-                                else if (set.Type == ChecksumType.SHA1)
-                                {
-                                    DateTime speedStart = DateTime.Now;
-
-                                    file.CurrentChecksum = GetChecksumWithProgress(SHA1WithProgress, fileInfo, speed, bytesProcessed, start);
-                                    if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                        continue;
-
-                                    TimeSpan speedSpan = DateTime.Now - speedStart;
-                                    if (fileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                        speed = fileInfo.Length / (long)speedSpan.TotalSeconds;
-                                }
-                                else
-                                {
-                                    throw new Exception(string.Format("{0} not implemented", set.Type));
-                                }
+                                TimeSpan speedSpan = DateTime.Now - speedStart;
+                                if (fileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
+                                    speed = fileInfo.Length / (long)speedSpan.TotalSeconds;
+                                
 
                                 outOfSetFiles.Add(foundFile, file.CurrentChecksum);
                             }
@@ -1824,15 +1599,10 @@ export results to text file
                 }
             }
 
-            ChecksumType setType;
-            if (ext == "md5")
-                setType = ChecksumType.MD5;
-            else if (ext == "sfv")
-                setType = ChecksumType.SFV;
-            else if (ext == "sha1")
-                setType = ChecksumType.SHA1;
-            else
+            ChecksumAlgorithm algorithm = ChecksumAlgorithm.FromExtension(ext);
+            if (algorithm == null)
                 return false;
+            ChecksumType setType = algorithm.Type;
 
             int overwriteCount;
             GetWorkset(fileName, path, setType, files, out overwriteCount);
@@ -1870,6 +1640,22 @@ export results to text file
         private void miNewSHA1_Click(object sender, EventArgs e)
         {
             if (!GetCreateSet("sha1", sender as List<string>))
+                return;
+
+            CreateSet();
+        }
+
+        private void miNewSHA256_Click(object sender, EventArgs e)
+        {
+            if (!GetCreateSet("sha256", sender as List<string>))
+                return;
+
+            CreateSet();
+        }
+
+        private void miNewSHA512_Click(object sender, EventArgs e)
+        {
+            if (!GetCreateSet("sha512", sender as List<string>))
                 return;
 
             CreateSet();
@@ -1991,46 +1777,15 @@ export results to text file
                         }
                         else
                         {
-                            if (set.Type == ChecksumType.MD5)
-                            {
-                                DateTime speedStart = DateTime.Now;
+                            DateTime speedStart = DateTime.Now;
 
-                                file.CurrentChecksum = GetChecksumWithProgress(MD5WithProgress, file.FileInfo, speed, bytesProcessed, start);
-                                if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                    continue;
+                            file.CurrentChecksum = GetChecksumWithProgress(ChecksumAlgorithm.Get(set.Type), file.FileInfo, speed, bytesProcessed, start);
+                            if (string.IsNullOrEmpty(file.CurrentChecksum))
+                                continue;
 
-                                TimeSpan speedSpan = DateTime.Now - speedStart;
-                                if (file.FileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                    speed = file.FileInfo.Length / (long)speedSpan.TotalSeconds;
-                            }
-                            else if (set.Type == ChecksumType.SFV)
-                            {
-                                DateTime speedStart = DateTime.Now;
-
-                                file.CurrentChecksum = GetChecksumWithProgress(CRC32WithProgress, file.FileInfo, speed, bytesProcessed, start);
-                                if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                    continue;
-
-                                TimeSpan speedSpan = DateTime.Now - speedStart;
-                                if (file.FileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                    speed = file.FileInfo.Length / (long)speedSpan.TotalSeconds;
-                            }
-                            else if (set.Type == ChecksumType.SHA1)
-                            {
-                                DateTime speedStart = DateTime.Now;
-
-                                file.CurrentChecksum = GetChecksumWithProgress(SHA1WithProgress, file.FileInfo, speed, bytesProcessed, start);
-                                if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                    continue;
-
-                                TimeSpan speedSpan = DateTime.Now - speedStart;
-                                if (file.FileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                    speed = file.FileInfo.Length / (long)speedSpan.TotalSeconds;
-                            }
-                            else
-                            {
-                                throw new Exception(string.Format("{0} not implemented", set.Type));
-                            }
+                            TimeSpan speedSpan = DateTime.Now - speedStart;
+                            if (file.FileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
+                                speed = file.FileInfo.Length / (long)speedSpan.TotalSeconds;
 
                             file.OriginalChecksum = file.CurrentChecksum;
                             file.State = ChecksumFileState.OK;
@@ -2096,7 +1851,7 @@ export results to text file
 
                         foreach (ChecksumFile file in set.Files)
                         {
-                            if (set.Type == ChecksumType.MD5 || set.Type == ChecksumType.SHA1)
+                            if (ChecksumAlgorithm.Get(set.Type).DigestFirst)
                             {
                                 if (Program.Settings.Create.MD5SumCompatibility)
                                     shabang.AppendLine(string.Format("{0} *{1}", file.CurrentChecksum, file.FileName));
@@ -2202,6 +1957,7 @@ export results to text file
         {
             btnPause.Text = Language.MainForm.ResumeButton;
             _pause = true;
+            _pauseGate.Pause();
             SetStatusText(Language.MainForm.Status_Paused);
             btnHide.Enabled = false;
         }
@@ -2210,6 +1966,7 @@ export results to text file
         {
             btnPause.Text = Language.MainForm.PauseButton;
             _pause = false;
+            _pauseGate.Resume();
             btnHide.Enabled = true;
         }
 
@@ -2220,7 +1977,7 @@ export results to text file
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            _queueStop = true;
+            StopWork();
         }
 
         private void MainForm_Move(object sender, EventArgs e)
@@ -2230,7 +1987,7 @@ export results to text file
 
         private void lvwFiles_DragOver(object sender, DragEventArgs e)
         {
-            List<FileDrop> list = FileDrop.GetList(e.Data, new[] { ".sfv", ".md5", ".sha1" }, true);
+            List<FileDrop> list = FileDrop.GetList(e.Data, ChecksumAlgorithm.DottedExtensions, true);
             if (list.Count > 0)
             {
                 e.Effect = DragDropEffects.Copy;
@@ -2240,7 +1997,7 @@ export results to text file
         private readonly Timer _dropTimer = new Timer();
         private void lvwFiles_DragDrop(object sender, DragEventArgs e)
         {
-            List<FileDrop> list = FileDrop.GetList(e.Data, new[] { ".sfv", ".md5", ".sha1" }, true);
+            List<FileDrop> list = FileDrop.GetList(e.Data, ChecksumAlgorithm.DottedExtensions, true);
             if (list.Count > 0)
             {
                 EngageDropTimer(list.Select(p => p.Path).ToList());
@@ -2272,26 +2029,13 @@ export results to text file
 
             List<string> files = (List<string>)_createTimer.Tag;
 
-            switch (_initialCreateChecksumType)
-            {
-                case ChecksumType.SFV:
-                    miNewSFV_Click(files, EventArgs.Empty);
-                    break;
+            if (!GetCreateSet(ChecksumAlgorithm.Get(_initialCreateChecksumType).Extension, files))
+                return;
 
-                case ChecksumType.MD5:
-                    miNewMD5_Click(files, EventArgs.Empty);
-                    break;
-
-                case ChecksumType.SHA1:
-                    miNewSHA1_Click(files, EventArgs.Empty);
-                    break;
-
-                default:
-                    throw new Exception(string.Format("{0} not implemented", _initialCreateChecksumType));
-            }
+            CreateSet();
         }
 
-        private void _dropTimer_Tick(object sender, EventArgs e)
+        private async void _dropTimer_Tick(object sender, EventArgs e)
         {
             _dropTimer.Enabled = false;
 
@@ -2334,7 +2078,7 @@ export results to text file
 
                     if (Program.Settings.Check.AutoVerify)
                     {
-                        Verify();
+                        await VerifyAsync();
                     }
                     else
                     {
@@ -2713,7 +2457,10 @@ export results to text file
             miNewSFV.Text = p.Menu_File_NewSFVFile;
             miNewMD5.Text = p.Menu_File_NewMD5File;
             miNewSHA1.Text = p.Menu_File_NewSHA1File;
+            miNewSHA256.Text = p.Menu_File_NewSHA256File;
+            miNewSHA512.Text = p.Menu_File_NewSHA512File;
             miOpen.Text = p.Menu_File_Open;
+            miVerifyFolder.Text = p.Menu_File_VerifyFolder;
             miPreferences.Text = p.Menu_File_Preferences;
             miCheckForUpdates.Text = p.Menu_File_CheckForUpdates;
             miExit.Text = p.Menu_File_Exit;

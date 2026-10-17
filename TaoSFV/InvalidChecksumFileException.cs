@@ -4,7 +4,7 @@ using TaoSFV.Model.Workset;
 
 namespace TaoSFV
 {
-    class InvalidChecksumFileException : Exception
+    public class InvalidChecksumFileException : Exception
     {
         // TODO: Localize "Line"
         public InvalidChecksumFileException(string fileName, ChecksumType checksumType, string[] lines, int lineIndex)

@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using TaoSFV.Hash;
 
 namespace TaoSFV.Model.Workset
 {
 	/// <summary>
-	/// Reading, writing and line parsing for .sfv, .md5 and .sha1 files.
+	/// Reading, writing and line parsing for .sfv, .md5, .sha1, .sha256 and .sha512 files.
 	/// </summary>
 	public static class ChecksumFileFormat
 	{
@@ -109,12 +110,12 @@ namespace TaoSFV.Model.Workset
 		}
 
 		/// <summary>
-		/// True for comment lines: ';' in any file, '#' in .md5 and .sha1 files. Expects a trimmed line.
+		/// True for comment lines: ';' in any file, '#' in md5sum-style files. Expects a trimmed line.
 		/// </summary>
 		public static bool IsComment(string line, ChecksumType type)
 		{
 			return line.StartsWith(";") ||
-				(line.StartsWith("#") && (type == ChecksumType.MD5 || type == ChecksumType.SHA1));
+				(line.StartsWith("#") && ChecksumAlgorithm.Get(type).DigestFirst);
 		}
 
 		/// <summary>
@@ -126,15 +127,10 @@ namespace TaoSFV.Model.Workset
 			fileName = null;
 			checksum = null;
 
-			bool ok;
-			if (type == ChecksumType.MD5)
-				ok = TryParseDigestLine(line, "MD5 (", 32, out fileName, out checksum);
-			else if (type == ChecksumType.SHA1)
-				ok = TryParseDigestLine(line, "SHA1 (", 40, out fileName, out checksum);
-			else if (type == ChecksumType.SFV)
-				ok = TryParseSfvLine(line, out fileName, out checksum);
-			else
-				throw new NotSupportedException(string.Format("{0} not implemented", type));
+			ChecksumAlgorithm algorithm = ChecksumAlgorithm.Get(type);
+			bool ok = algorithm.DigestFirst
+				? TryParseDigestLine(line, algorithm.BsdTag + " (", algorithm.DigestLength, out fileName, out checksum)
+				: TryParseSfvLine(line, out fileName, out checksum);
 
 			if (ok)
 				fileName = fileName.Replace('/', '\\');

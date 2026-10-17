@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using TaoSFV.Localization;
+using TaoSFV.Hash;
 using TaoSFV.Model.Workset;
 
 namespace TaoSFV
@@ -366,7 +367,7 @@ namespace TaoSFV
                             if (file.IsDeleted)
                                 continue;
 
-                            if (_set.Type == ChecksumType.MD5 || _set.Type == ChecksumType.SHA1)
+                            if (ChecksumAlgorithm.Get(_set.Type).DigestFirst)
                             {
                                 if (Program.Settings.Create.MD5SumCompatibility)
                                     shabang.AppendLine(string.Format("{0} *{1}", file.OriginalChecksum, file.FileName));

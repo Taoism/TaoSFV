@@ -1,19 +1,37 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
-using Microsoft.Data.Sqlite;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using Microsoft.Data.Sqlite;
+using TaoSFV.Hash;
 using TaoSFV.Model.Workset;
 
 namespace TaoSFV
 {
 	internal static class Cache
 	{
-		private class UpdateSQLData
+		private class PendingEntry
 		{
-			public FileInfo FileInfo { get; set; }
-			public string Checksum { get; set; }
+			public ChecksumAlgorithm Algorithm;
+			public string FileName;
+			public DateTime LastWriteUtc;
+			public long Length;
+			public string Checksum;
+		}
+
+		// one low-priority writer drains this queue, instead of a thread per checked file
+		private static readonly BlockingCollection<PendingEntry> _pending = new BlockingCollection<PendingEntry>();
+		private static readonly object _writerLock = new object();
+		private static Thread _writer;
+		private static int _inFlight;
+
+		// false when settings aren't loaded (unit tests) or the cache is turned off
+		private static bool IsEnabled
+		{
+			get { return Program.Settings != null && Program.Settings.General.UseCachedResults; }
 		}
 
 		private static void Clear(string tableName)
@@ -25,7 +43,7 @@ namespace TaoSFV
 
 		private static void Clean(string tableName)
 		{
-			if (!Program.Settings.General.UseCachedResults)
+			if (!IsEnabled)
 				return;
 
 			string getMaxIDSql = string.Format("select max(ID) from {0};", tableName);
@@ -54,137 +72,95 @@ namespace TaoSFV
 
 		public static void Clean()
 		{
+			Flush();
 			try
 			{
-				Clean("CRC32FileCache");
-				Clean("MD5FileCache");
-				Clean("SHA1FileCache");
+				foreach (ChecksumAlgorithm algorithm in ChecksumAlgorithm.All)
+					Clean(algorithm.CacheTable);
 			}
 			catch
 			{
 			}
 		}
 
-		public static void CleanAsync()
+		/// <summary>Queues a checksum for the cache; written in the background.</summary>
+		public static void Update(ChecksumType type, FileInfo fileInfo, string checksum)
 		{
-			Thread t = new Thread(Clean);
-			t.Priority = Thread.CurrentThread.Priority;
-			t.Start();
-		}
-
-		private static void UpdateSFVCache(object sqlData)
-		{
-			try
-			{
-				FileInfo fileInfo = ((UpdateSQLData)sqlData).FileInfo;
-				string crc32 = ((UpdateSQLData)sqlData).Checksum;
-
-				const string updateSql = "insert into CRC32FileCache (FileName, LastWriteUtc, FileLength, CRC32) values(@FileName, @LastWriteUtc, @FileLength, @CRC32);";
-				using (SqliteConnection conn = Program.GetOpenCacheConnection())
-				using (SqliteCommand cmd = new SqliteCommand(updateSql, conn))
-				{
-					cmd.Parameters.AddWithValue("@FileName", fileInfo.FullName);
-					cmd.Parameters.AddWithValue("@LastWriteUtc", fileInfo.LastWriteTimeUtc);
-					cmd.Parameters.AddWithValue("@FileLength", fileInfo.Length);
-					cmd.Parameters.AddWithValue("@CRC32", crc32);
-					cmd.ExecuteNonQuery();
-				}
-			}
-			catch
-			{
-			}
-		}
-
-		private static void UpdateMD5Cache(object sqlData)
-		{
-			try
-			{
-				FileInfo fileInfo = ((UpdateSQLData)sqlData).FileInfo;
-				string md5 = ((UpdateSQLData)sqlData).Checksum;
-
-				const string updateSql = "insert into MD5FileCache (FileName, LastWriteUtc, FileLength, MD5) values(@FileName, @LastWriteUtc, @FileLength, @MD5);";
-				using (SqliteConnection conn = Program.GetOpenCacheConnection())
-				using (SqliteCommand cmd = new SqliteCommand(updateSql, conn))
-				{
-					cmd.Parameters.AddWithValue("@FileName", fileInfo.FullName);
-					cmd.Parameters.AddWithValue("@LastWriteUtc", fileInfo.LastWriteTimeUtc);
-					cmd.Parameters.AddWithValue("@FileLength", fileInfo.Length);
-					cmd.Parameters.AddWithValue("@MD5", md5);
-					cmd.ExecuteNonQuery();
-				}
-			}
-			catch
-			{
-			}
-		}
-
-		private static void UpdateSHA1Cache(object sqlData)
-		{
-			try
-			{
-				FileInfo fileInfo = ((UpdateSQLData)sqlData).FileInfo;
-				string sha1 = ((UpdateSQLData)sqlData).Checksum;
-
-				const string updateSql = "insert into SHA1FileCache (FileName, LastWriteUtc, FileLength, SHA1) values(@FileName, @LastWriteUtc, @FileLength, @SHA1);";
-				using (SqliteConnection conn = Program.GetOpenCacheConnection())
-				using (SqliteCommand cmd = new SqliteCommand(updateSql, conn))
-				{
-					cmd.Parameters.AddWithValue("@FileName", fileInfo.FullName);
-					cmd.Parameters.AddWithValue("@LastWriteUtc", fileInfo.LastWriteTimeUtc);
-					cmd.Parameters.AddWithValue("@FileLength", fileInfo.Length);
-					cmd.Parameters.AddWithValue("@SHA1", sha1);
-					cmd.ExecuteNonQuery();
-				}
-			}
-			catch
-			{
-			}
-		}
-
-		public static void UpdateSFVCache(FileInfo fileInfo, string crc32)
-		{
-			if (!Program.Settings.General.UseCachedResults)
+			if (!IsEnabled)
 				return;
 
-			Thread t = new Thread(UpdateSFVCache);
-			t.Priority = ThreadPriority.Lowest;
-			t.Start(new UpdateSQLData { FileInfo = fileInfo, Checksum = crc32 });
+			EnsureWriter();
+			Interlocked.Increment(ref _inFlight);
+			_pending.Add(new PendingEntry
+			{
+				Algorithm = ChecksumAlgorithm.Get(type),
+				FileName = fileInfo.FullName,
+				LastWriteUtc = fileInfo.LastWriteTimeUtc,
+				Length = fileInfo.Length,
+				Checksum = checksum
+			});
 		}
 
-		public static void UpdateSHA1Cache(FileInfo fileInfo, string crc32)
+		/// <summary>Waits (briefly) until queued cache writes are on disk.</summary>
+		public static void Flush()
 		{
-			if (!Program.Settings.General.UseCachedResults)
-				return;
-
-			Thread t = new Thread(UpdateSHA1Cache);
-			t.Priority = ThreadPriority.Lowest;
-			t.Start(new UpdateSQLData { FileInfo = fileInfo, Checksum = crc32 });
+			Stopwatch sw = Stopwatch.StartNew();
+			while (Volatile.Read(ref _inFlight) > 0 && sw.Elapsed < TimeSpan.FromSeconds(10))
+				Thread.Sleep(10);
 		}
 
-		public static void UpdateMD5Cache(FileInfo fileInfo, string md5)
+		private static void EnsureWriter()
 		{
-			if (!Program.Settings.General.UseCachedResults)
-				return;
+			lock (_writerLock)
+			{
+				if (_writer != null)
+					return;
 
-			Thread t = new Thread(UpdateMD5Cache);
-			t.Priority = ThreadPriority.Lowest;
-			t.Start(new UpdateSQLData { FileInfo = fileInfo, Checksum = md5 });
+				_writer = new Thread(WriterLoop);
+				_writer.IsBackground = true;
+				_writer.Priority = ThreadPriority.Lowest;
+				_writer.Name = "Cache writer";
+				_writer.Start();
+			}
+		}
+
+		private static void WriterLoop()
+		{
+			foreach (PendingEntry entry in _pending.GetConsumingEnumerable())
+			{
+				try
+				{
+					string sql = string.Format("insert into {0} (FileName, LastWriteUtc, FileLength, {1}) values(@FileName, @LastWriteUtc, @FileLength, @Checksum);",
+						entry.Algorithm.CacheTable, entry.Algorithm.CacheColumn);
+					using (SqliteConnection conn = Program.GetOpenCacheConnection())
+					using (SqliteCommand cmd = new SqliteCommand(sql, conn))
+					{
+						cmd.Parameters.AddWithValue("@FileName", entry.FileName);
+						cmd.Parameters.AddWithValue("@LastWriteUtc", entry.LastWriteUtc);
+						cmd.Parameters.AddWithValue("@FileLength", entry.Length);
+						cmd.Parameters.AddWithValue("@Checksum", entry.Checksum);
+						cmd.ExecuteNonQuery();
+					}
+				}
+				catch (Exception ex)
+				{
+					Trace.WriteLine(ex);
+				}
+				finally
+				{
+					Interlocked.Decrement(ref _inFlight);
+				}
+			}
 		}
 
 		public static List<ChecksumFile> GetCache(ChecksumType checksumType, string baseDirectory)
 		{
-			if (!Program.Settings.General.UseCachedResults)
+			if (!IsEnabled)
 				return new List<ChecksumFile>();
 
-			string getCacheSql;
-			if (checksumType == ChecksumType.MD5)
-				getCacheSql = "select FileName, LastWriteUtc, FileLength, MD5 as Checksum from MD5FileCache where FileName like @Directory || '%'";
-			else if (checksumType == ChecksumType.SFV)
-				getCacheSql = "select FileName, LastWriteUtc, FileLength, CRC32 as Checksum from CRC32FileCache where FileName like @Directory || '%'";
-			else if (checksumType == ChecksumType.SHA1)
-				getCacheSql = "select FileName, LastWriteUtc, FileLength, SHA1 as Checksum from SHA1FileCache where FileName like @Directory || '%'";
-			else
-				throw new Exception(string.Format("{0} not implemented", checksumType));
+			ChecksumAlgorithm algorithm = ChecksumAlgorithm.Get(checksumType);
+			string getCacheSql = string.Format("select FileName, LastWriteUtc, FileLength, {1} as Checksum from {0} where FileName like @Directory || '%'",
+				algorithm.CacheTable, algorithm.CacheColumn);
 
 			DataTable dt;
 
@@ -213,9 +189,9 @@ namespace TaoSFV
 
 		internal static void Clear()
 		{
-			Clear("CRC32FileCache");
-			Clear("MD5FileCache");
-			Clear("SHA1FileCache");
+			Flush();
+			foreach (ChecksumAlgorithm algorithm in ChecksumAlgorithm.All)
+				Clear(algorithm.CacheTable);
 		}
 	}
 }

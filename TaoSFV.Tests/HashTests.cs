@@ -90,6 +90,42 @@ namespace TaoSFV.Tests
 			Assert.Equal(expected, SHA1.Calculate(Encoding.ASCII.GetBytes(input)));
 		}
 
+		[Theory]
+		[InlineData("sha256", "abc", "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")]
+		[InlineData("sha512", "abc", "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f")]
+		[InlineData("sfv", "123456789", "CBF43926")]
+		[InlineData("md5", "abc", "900150983cd24fb0d6963f7d28e17f72")]
+		[InlineData("sha1", "abc", "a9993e364706816aba3e25717850c26c9cd0d89d")]
+		public void ChecksumAlgorithm_KnownVectors(string extension, string input, string expected)
+		{
+			ChecksumAlgorithm algorithm = ChecksumAlgorithm.FromExtension(extension);
+			using (MemoryStream stream = new MemoryStream(Encoding.ASCII.GetBytes(input)))
+			{
+				stream.Position = 2; // Compute always starts from the beginning
+				Assert.Equal(expected, algorithm.Compute(stream));
+			}
+			Assert.Equal(expected.Length, algorithm.DigestLength);
+		}
+
+		[Theory]
+		[InlineData("album.SFV", "sfv")]
+		[InlineData(@"C:\music\a.b\album.sha256", "sha256")]
+		[InlineData(".sha512", "sha512")]
+		[InlineData("md5", "md5")]
+		public void ChecksumAlgorithm_FromExtension(string input, string expected)
+		{
+			Assert.Equal(expected, ChecksumAlgorithm.FromExtension(input).Extension);
+		}
+
+		[Theory]
+		[InlineData("album.txt")]
+		[InlineData(@"C:\music\a.sfv\file")]
+		[InlineData("")]
+		public void ChecksumAlgorithm_FromExtensionRejectsOthers(string input)
+		{
+			Assert.Null(ChecksumAlgorithm.FromExtension(input));
+		}
+
 		[Fact]
 		public void Md5AndSha1_MatchFrameworkAcrossBufferBoundaries()
 		{

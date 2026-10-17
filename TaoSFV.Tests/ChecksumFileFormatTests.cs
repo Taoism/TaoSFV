@@ -92,6 +92,34 @@ namespace TaoSFV.Tests
 			AssertParses(ChecksumType.SHA1, line, name, EmptySHA1);
 		}
 
+		private const string EmptySHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+		private const string EmptySHA512 = "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e";
+
+		[Theory]
+		[InlineData(EmptySHA256 + " *file.bin", "file.bin")]
+		[InlineData(EmptySHA256 + "  file.bin", "file.bin")]   // sha256sum text mode
+		[InlineData("SHA256 (file.bin) = " + EmptySHA256, "file.bin")] // sha256sum --tag
+		[InlineData("file.bin " + EmptySHA256, "file.bin")]
+		public void Sha256_ParsesLines(string line, string name)
+		{
+			AssertParses(ChecksumType.SHA256, line, name, EmptySHA256);
+		}
+
+		[Theory]
+		[InlineData(EmptySHA512 + "  dir/file.bin", @"dir\file.bin")]
+		[InlineData("SHA512 (file.bin) = " + EmptySHA512, "file.bin")]
+		public void Sha512_ParsesLines(string line, string name)
+		{
+			AssertParses(ChecksumType.SHA512, line, name, EmptySHA512);
+		}
+
+		[Fact]
+		public void Sha256_RejectsShorterDigests()
+		{
+			AssertRejects(ChecksumType.SHA256, EmptySHA1 + " *file.bin");
+			AssertRejects(ChecksumType.SHA512, EmptySHA256 + " *file.bin");
+		}
+
 		[Theory]
 		[InlineData("d41d8cd98f00b204e9800998ecf8427e")]
 		[InlineData("file.bin d41d8cd98f00b204")]
@@ -110,6 +138,7 @@ namespace TaoSFV.Tests
 			Assert.True(ChecksumFileFormat.IsComment("# md5 comment", ChecksumType.MD5));
 			Assert.True(ChecksumFileFormat.IsComment("# sha1 comment", ChecksumType.SHA1));
 			Assert.False(ChecksumFileFormat.IsComment(EmptyMD5 + " *x", ChecksumType.MD5));
+			Assert.True(ChecksumFileFormat.IsComment("# sha256 comment", ChecksumType.SHA256));
 		}
 
 		// --- encodings

@@ -14,8 +14,17 @@ namespace TaoSFV.Localization
         ///<summary>New SH&A-1 File...</summary>
         public string Menu_File_NewSHA1File { get; set; }
 
+        ///<summary>New SHA-&256 File...</summary>
+        public string Menu_File_NewSHA256File { get; set; }
+
+        ///<summary>New SHA-&512 File...</summary>
+        public string Menu_File_NewSHA512File { get; set; }
+
         ///<summary>&Open...</summary>
         public string Menu_File_Open { get; set; }
+
+        ///<summary>Verify &Folder...</summary>
+        public string Menu_File_VerifyFolder { get; set; }
 
         ///<summary>&Preferences...</summary>
         public string Menu_File_Preferences { get; set; }
@@ -226,6 +235,9 @@ namespace TaoSFV.Localization
 
         ///<summary>TaoSFV file associations and Explorer menus were removed for your account.</summary>
         public string UnregisterFileTypes_Message { get; set; }
+
+        ///<summary>Choose a folder. Every checksum file in it and its subfolders will be verified.</summary>
+        public string VerifyFolder_Description { get; set; }
 
         ///<summary>Copy File Name(s)</summary>
         public string CopyFileNamesContextMenu { get; set; }

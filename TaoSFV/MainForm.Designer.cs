@@ -35,8 +35,11 @@
             this.miNewSFV = new System.Windows.Forms.ToolStripMenuItem();
             this.miNewMD5 = new System.Windows.Forms.ToolStripMenuItem();
             this.miNewSHA1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.miNewSHA256 = new System.Windows.Forms.ToolStripMenuItem();
+            this.miNewSHA512 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.miOpen = new System.Windows.Forms.ToolStripMenuItem();
+            this.miVerifyFolder = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.miPreferences = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
@@ -74,7 +77,7 @@
             this.lblGood = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblBad = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblMissing = new System.Windows.Forms.ToolStripStatusLabel();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.splitContainer1 = new TaoSFV.SafeSplitContainer();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.miCopyFileNames = new System.Windows.Forms.ToolStripMenuItem();
             this.CopyPathAndFileNames = new System.Windows.Forms.ToolStripMenuItem();
@@ -130,8 +133,11 @@
             this.miNewSFV,
             this.miNewMD5,
             this.miNewSHA1,
+            this.miNewSHA256,
+            this.miNewSHA512,
             this.toolStripSeparator5,
             this.miOpen,
+            this.miVerifyFolder,
             this.toolStripSeparator3,
             this.miPreferences,
             this.toolStripSeparator1,
@@ -171,6 +177,20 @@
             this.miNewSHA1.Size = new System.Drawing.Size(210, 22);
             this.miNewSHA1.Text = "New SH&A-1 File...";
             this.miNewSHA1.Click += new System.EventHandler(this.miNewSHA1_Click);
+            //
+            // miNewSHA256
+            //
+            this.miNewSHA256.Name = "miNewSHA256";
+            this.miNewSHA256.Size = new System.Drawing.Size(210, 22);
+            this.miNewSHA256.Text = "New SHA-&256 File...";
+            this.miNewSHA256.Click += new System.EventHandler(this.miNewSHA256_Click);
+            //
+            // miNewSHA512
+            //
+            this.miNewSHA512.Name = "miNewSHA512";
+            this.miNewSHA512.Size = new System.Drawing.Size(210, 22);
+            this.miNewSHA512.Text = "New SHA-&512 File...";
+            this.miNewSHA512.Click += new System.EventHandler(this.miNewSHA512_Click);
             // 
             // toolStripSeparator5
             // 
@@ -184,6 +204,14 @@
             this.miOpen.Size = new System.Drawing.Size(210, 22);
             this.miOpen.Text = "&Open...";
             this.miOpen.Click += new System.EventHandler(this.miOpen_Click);
+            //
+            // miVerifyFolder
+            //
+            this.miVerifyFolder.Name = "miVerifyFolder";
+            this.miVerifyFolder.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) | System.Windows.Forms.Keys.O)));
+            this.miVerifyFolder.Size = new System.Drawing.Size(210, 22);
+            this.miVerifyFolder.Text = "Verify &Folder...";
+            this.miVerifyFolder.Click += new System.EventHandler(this.miVerifyFolder_Click);
             // 
             // toolStripSeparator3
             // 
@@ -786,6 +814,7 @@
         private System.Windows.Forms.ToolStripMenuItem mnuView;
 		private System.Windows.Forms.ToolStripMenuItem mnuHelp;
         private System.Windows.Forms.ToolStripMenuItem miOpen;
+        private System.Windows.Forms.ToolStripMenuItem miVerifyFolder;
         private System.Windows.Forms.ToolStripMenuItem miPreferences;
         private System.Windows.Forms.ToolStripMenuItem miExit;
         private System.Windows.Forms.ToolStripMenuItem miFileOK;
@@ -805,7 +834,7 @@
         private System.Windows.Forms.ToolStripStatusLabel lblGood;
         private System.Windows.Forms.ToolStripStatusLabel lblBad;
         private System.Windows.Forms.ToolStripStatusLabel lblMissing;
-        private System.Windows.Forms.SplitContainer splitContainer1;
+        private TaoSFV.SafeSplitContainer splitContainer1;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tpComments;
@@ -834,6 +863,8 @@
 		private System.Windows.Forms.ToolStripMenuItem miRegisterFileTypes;
 		private System.Windows.Forms.ToolStripMenuItem miUnregisterFileTypes;
 		private System.Windows.Forms.ToolStripMenuItem miNewSHA1;
+		private System.Windows.Forms.ToolStripMenuItem miNewSHA256;
+		private System.Windows.Forms.ToolStripMenuItem miNewSHA512;
 		private System.Windows.Forms.ToolStripMenuItem miNewMD5;
 		private System.Windows.Forms.ToolStripMenuItem miNewSFV;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;

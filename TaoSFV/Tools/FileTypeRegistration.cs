@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using TaoSFV.Hash;
 
 namespace TaoSFV
 {
@@ -9,12 +11,12 @@ namespace TaoSFV
 	/// </summary>
 	internal static class FileTypeRegistration
 	{
-		public static readonly string[] Extensions = { "sfv", "md5", "sha1" };
+		public static readonly string[] Extensions = ChecksumAlgorithm.All.Select(a => a.Extension).ToArray();
 
 		private const string ClassesPath = @"Software\Classes";
 		private const string CreateMenuKey = "TaoSFV.CreateMenu";
+		private const string FolderMenuKey = "TaoSFV.FolderMenu";
 		private const string MenuVerb = "TaoSFV";
-		private static readonly string[] MenuTargets = { "*", "Directory" };
 
 		private const int SHCNE_ASSOCCHANGED = 0x08000000;
 		private const int SHCNF_IDLIST = 0x0;
@@ -74,27 +76,42 @@ namespace TaoSFV
 
 			// "TaoSFV > Create SFV/MD5/SHA-1..." on files and folders. ExtendedSubCommandsKey is the
 			// per-user counterpart of the HKLM CommandStore that ilSFV used.
-			string[,] createVerbs = { { "sfv", "Create SFV..." }, { "md5", "Create MD5..." }, { "sha1", "Create SHA-1..." } };
-			for (int i = 0; i < createVerbs.GetLength(0); i++)
+			foreach (string menuKey in new[] { CreateMenuKey, FolderMenuKey })
 			{
-				using (RegistryKey verb = classes.CreateSubKey(string.Format(@"{0}\shell\{1}", CreateMenuKey, createVerbs[i, 0])))
+				foreach (ChecksumAlgorithm algorithm in ChecksumAlgorithm.All)
 				{
-					verb.SetValue("MUIVerb", createVerbs[i, 1]);
-					verb.SetValue("MultiSelectModel", "Player");
-					using (RegistryKey command = verb.CreateSubKey("command"))
-						command.SetValue("", string.Format("\"{0}\" /create {1} \"%1\"", exePath, createVerbs[i, 0]));
+					using (RegistryKey verb = classes.CreateSubKey(string.Format(@"{0}\shell\{1}", menuKey, algorithm.Extension)))
+					{
+						verb.SetValue("MUIVerb", string.Format("Create {0}...", algorithm.DisplayName));
+						verb.SetValue("MultiSelectModel", "Player");
+						using (RegistryKey command = verb.CreateSubKey("command"))
+							command.SetValue("", string.Format("\"{0}\" /create {1} \"%1\"", exePath, algorithm.Extension));
+					}
 				}
 			}
 
-			foreach (string target in MenuTargets)
+			// "0verify" sorts the verify entry above the Create entries
+			using (RegistryKey verb = classes.CreateSubKey(string.Format(@"{0}\shell\0verify", FolderMenuKey)))
 			{
-				using (RegistryKey verb = classes.CreateSubKey(string.Format(@"{0}\shell\{1}", target, MenuVerb)))
-				{
-					verb.SetValue("MUIVerb", "TaoSFV");
-					verb.SetValue("Icon", string.Format("\"{0}\",0", exePath));
-					verb.SetValue("MultiSelectModel", "Player");
-					verb.SetValue("ExtendedSubCommandsKey", CreateMenuKey);
-				}
+				verb.SetValue("MUIVerb", "Verify checksum files");
+				verb.SetValue("MultiSelectModel", "Player");
+				verb.SetValue("CommandFlags", 0x40, RegistryValueKind.DWord); // ECF_SEPARATORAFTER
+				using (RegistryKey command = verb.CreateSubKey("command"))
+					command.SetValue("", string.Format("\"{0}\" \"%1\"", exePath));
+			}
+
+			AddMenu(classes, "*", CreateMenuKey, exePath);
+			AddMenu(classes, "Directory", FolderMenuKey, exePath);
+		}
+
+		private static void AddMenu(RegistryKey classes, string target, string subCommandsKey, string exePath)
+		{
+			using (RegistryKey verb = classes.CreateSubKey(string.Format(@"{0}\shell\{1}", target, MenuVerb)))
+			{
+				verb.SetValue("MUIVerb", "TaoSFV");
+				verb.SetValue("Icon", string.Format("\"{0}\",0", exePath));
+				verb.SetValue("MultiSelectModel", "Player");
+				verb.SetValue("ExtendedSubCommandsKey", subCommandsKey);
 			}
 		}
 
@@ -129,7 +146,8 @@ namespace TaoSFV
 			}
 
 			classes.DeleteSubKeyTree(CreateMenuKey, false);
-			foreach (string target in MenuTargets)
+			classes.DeleteSubKeyTree(FolderMenuKey, false);
+			foreach (string target in new[] { "*", "Directory" })
 				classes.DeleteSubKeyTree(string.Format(@"{0}\shell\{1}", target, MenuVerb), false);
 		}
 

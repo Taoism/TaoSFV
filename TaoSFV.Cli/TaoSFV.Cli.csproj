@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Console front end: taosfv-cli.exe (a GUI exe can't return exit codes to cmd/PowerShell or write to their console) -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>TaoSFV.Cli</RootNamespace>
+    <AssemblyName>taosfv-cli</AssemblyName>
+    <ApplicationIcon>..\TaoSFV\MiniDisc Check.ico</ApplicationIcon>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Version>2.0.0</Version>
+    <Product>TaoSFV</Product>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TaoSFV\TaoSFV.csproj" />
+  </ItemGroup>
+
+</Project>

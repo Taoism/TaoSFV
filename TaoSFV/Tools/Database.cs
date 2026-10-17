@@ -9,8 +9,8 @@ namespace TaoSFV
 	/// </summary>
 	internal static class Database
 	{
-		public const int SettingsVersion = 1;
-		public const int CacheVersion = 1;
+		public const int SettingsVersion = 2;
+		public const int CacheVersion = 2;
 
 		public static SqliteConnection Open(string fileName)
 		{
@@ -191,6 +191,12 @@ create table RecentFile
 					}
 				}
 
+				if (version < 2)
+				{
+					// SHA-256/SHA-512 files are checksum files too; don't hash them into new sets
+					Execute(conn, "update Creating set ExcludeFilesOfType = ExcludeFilesOfType || ';.sha256;.sha512' where ExcludeFilesOfType not like '%.sha256%';");
+				}
+
 				SetVersion(conn, SettingsVersion);
 				Execute(conn, "commit;");
 			}
@@ -224,6 +230,17 @@ create index IX_MD5FileCache_FileName on MD5FileCache (FileName);
 
 create table SHA1FileCache (ID integer primary key autoincrement, FileName text not null, LastWriteUtc text not null, FileLength integer not null, SHA1 text not null);
 create index IX_SHA1FileCache_FileName on SHA1FileCache (FileName);
+");
+				}
+
+				if (version < 2)
+				{
+					Execute(conn, @"
+create table SHA256FileCache (ID integer primary key autoincrement, FileName text not null, LastWriteUtc text not null, FileLength integer not null, SHA256 text not null);
+create index IX_SHA256FileCache_FileName on SHA256FileCache (FileName);
+
+create table SHA512FileCache (ID integer primary key autoincrement, FileName text not null, LastWriteUtc text not null, FileLength integer not null, SHA512 text not null);
+create index IX_SHA512FileCache_FileName on SHA512FileCache (FileName);
 ");
 				}
 

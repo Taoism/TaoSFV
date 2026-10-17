@@ -147,6 +147,7 @@ namespace TaoSFV
                     ApplyTheme(Settings.General.Theme);
                     Application.ThreadException += Application_ThreadException;
                     Application.Run(new MainForm(args));
+                    Cache.Flush();
 
                     // Save settings
                     Settings.Save();
@@ -332,7 +333,12 @@ namespace TaoSFV
 
         public static void SafeDelete(string fileName)
         {
-            if (Settings.Check.UseRecyleBin)
+            SafeDelete(fileName, Settings.Check.UseRecyleBin);
+        }
+
+        public static void SafeDelete(string fileName, bool useRecycleBin)
+        {
+            if (useRecycleBin)
             {
                 InteropSHFileOperation fo = new InteropSHFileOperation();
                 fo.wFunc = InteropSHFileOperation.FO_Func.FO_DELETE;

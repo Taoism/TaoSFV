@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaoSFVLanguage", "TaoSFVLan
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaoSFV.Tests", "TaoSFV.Tests\TaoSFV.Tests.csproj", "{60DD8FA0-1C13-44DD-9D58-C6DF0B1D0D7B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaoSFV.Cli", "TaoSFV.Cli\TaoSFV.Cli.csproj", "{1F65455C-9936-462B-94B2-19F63AF3ED7A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +81,26 @@ Global
 		{60DD8FA0-1C13-44DD-9D58-C6DF0B1D0D7B}.Release|x64.Build.0 = Release|Any CPU
 		{60DD8FA0-1C13-44DD-9D58-C6DF0B1D0D7B}.Release|x86.ActiveCfg = Release|Any CPU
 		{60DD8FA0-1C13-44DD-9D58-C6DF0B1D0D7B}.Release|x86.Build.0 = Release|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Debug|Win32.Build.0 = Debug|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Debug|x64.Build.0 = Debug|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Debug|x86.Build.0 = Debug|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Release|Win32.ActiveCfg = Release|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Release|Win32.Build.0 = Release|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Release|x64.ActiveCfg = Release|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Release|x64.Build.0 = Release|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Release|x86.ActiveCfg = Release|Any CPU
+		{1F65455C-9936-462B-94B2-19F63AF3ED7A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

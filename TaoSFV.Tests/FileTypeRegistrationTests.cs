@@ -53,7 +53,10 @@ namespace TaoSFV.Tests
 			}
 
 			Assert.Equal("TaoSFV.CreateMenu", Value(@"*\shell\TaoSFV", "ExtendedSubCommandsKey"));
-			Assert.Equal("TaoSFV.CreateMenu", Value(@"Directory\shell\TaoSFV", "ExtendedSubCommandsKey"));
+			Assert.Equal("TaoSFV.FolderMenu", Value(@"Directory\shell\TaoSFV", "ExtendedSubCommandsKey"));
+			Assert.Equal("\"" + Exe + "\" \"%1\"", Value(@"TaoSFV.FolderMenu\shell\0verify\command"));
+			Assert.Equal("\"" + Exe + "\" /create sha256 \"%1\"", Value(@"TaoSFV.FolderMenu\shell\sha256\command"));
+			Assert.Equal("Create SHA-512...", Value(@"TaoSFV.CreateMenu\shell\sha512", "MUIVerb"));
 			Assert.Equal("\"" + Exe + "\" /create sfv \"%1\"", Value(@"TaoSFV.CreateMenu\shell\sfv\command"));
 			Assert.Equal("\"" + Exe + "\" /create md5 \"%1\"", Value(@"TaoSFV.CreateMenu\shell\md5\command"));
 			Assert.Equal("\"" + Exe + "\" /create sha1 \"%1\"", Value(@"TaoSFV.CreateMenu\shell\sha1\command"));

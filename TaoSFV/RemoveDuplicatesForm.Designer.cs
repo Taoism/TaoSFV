@@ -32,7 +32,7 @@
             this.colGroupingsDuplicates = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colGroupingsCount = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.splitContainer1 = new TaoSFV.SafeSplitContainer();
             this.lvwDuplicateFiles = new System.Windows.Forms.ListView();
             this.colFileName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.lblSelectFileToKeep = new System.Windows.Forms.Label();
@@ -245,7 +245,7 @@
 		private System.Windows.Forms.Button btnRemoveDuplicates;
 		private System.Windows.Forms.ListView lvwDuplicateFiles;
 		private System.Windows.Forms.Button btnOK;
-		private System.Windows.Forms.SplitContainer splitContainer1;
+		private TaoSFV.SafeSplitContainer splitContainer1;
 		private System.Windows.Forms.ListView lvwBadDirectories;
 		private System.Windows.Forms.Label lblOptionalSelectDirectories;
 		private System.Windows.Forms.Panel panel1;
