@@ -183,7 +183,6 @@ ShowVariables_Message                             = Kopfzeile/Fußzeile:\n{0} : 
 ShowVariables_Title                               = Kommentar-Variablen
 
 About                                             = Über
-MadeInTributeTohkSFV                              = erstellt als Hommage für hkSFV
 WebButton                                         = Web
 Version                                           = Version
 Released                                          = erschienen

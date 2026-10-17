@@ -183,7 +183,6 @@ ShowVariables_Message                             = Верхний/Нижний 
 ShowVariables_Title                               = Переменные, используемые в комментариях
 
 About                                             = О программе
-MadeInTributeTohkSFV                              = сделана как дань почета hkSFV
 WebButton                                         = Веб-сайт
 Version                                           = версия
 Released                                          = выпущена

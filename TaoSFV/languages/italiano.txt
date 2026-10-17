@@ -183,7 +183,6 @@ ShowVariables_Message                             = *Header/Footer:\n{0} : Check
 ShowVariables_Title                               = *Comment variables
 
 About                                             = Informazioni
-MadeInTributeTohkSFV                              = *made in tribute to hkSFV
 WebButton                                         = Web
 Version                                           = versione
 Released                                          = rilasciata

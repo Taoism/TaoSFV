@@ -183,7 +183,6 @@ ShowVariables_Message                             = 標題/註腳:\n{0} : 校驗
 ShowVariables_Title                               = 註解變數
 
 About                                             = 關於
-MadeInTributeTohkSFV                              = 產生於hkSFV
 WebButton                                         = 網路
 Version                                           = 版本
 Released                                          = 發佈的

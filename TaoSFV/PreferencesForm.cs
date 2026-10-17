@@ -175,7 +175,7 @@ namespace TaoSFV
             
             // About
             tpAbout.Text = p.About;
-            lblMadeInTributeTohkSFV.Text = p.MadeInTributeTohkSFV;
+            lblMadeInTributeTohkSFV.Text = p.MadeInTribute;
             btnWeb.Text = p.WebButton;
 
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -186,6 +186,13 @@ namespace TaoSFV
 
             lblVersion.Text = string.Format("{0} {1}.{2}", p.Version, major, minor, build);
             lblReleaseDate.Text = string.Format("{0} {1:yyyy-MM-dd}", p.Released, releaseDate);
+
+            // the tribute line starts with "TaoSFV", so it replaces the title and gets the first line to itself;
+            // version and release date share the second
+            lblTaoSFV.Visible = false;
+            lblMadeInTributeTohkSFV.Location = lblTaoSFV.Location;
+            lblVersion.Location = new System.Drawing.Point(lblTaoSFV.Left, lblTaoSFV.Top + 15);
+            lblReleaseDate.Location = new System.Drawing.Point(lblVersion.Left + lblVersion.PreferredWidth + 8, lblVersion.Top);
 
             grpUsageStatistics.Text = p.UsageStatistics;
             lblFilesChecked.Text = p.FilesChecked;

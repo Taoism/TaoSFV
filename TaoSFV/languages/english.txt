@@ -205,7 +205,7 @@ ShowVariables_Message                             = Header/Footer:\n{0} : Checks
 ShowVariables_Title                               = Comment variables
 
 About                                             = About
-MadeInTributeTohkSFV                              = made in tribute to hkSFV
+MadeInTribute                                     = TaoSFV made in tribute to ilSFV and hkSFV, Thanks Jud!
 WebButton                                         = Web
 Version                                           = version
 Released                                          = released

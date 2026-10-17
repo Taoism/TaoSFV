@@ -173,8 +173,8 @@ namespace TaoSFV.Localization
         ///<summary>About</summary>
         public string About { get; set; }
 
-        ///<summary>made in tribute to hkSFV</summary>
-        public string MadeInTributeTohkSFV { get; set; }
+        ///<summary>TaoSFV made in tribute to ilSFV and hkSFV, Thanks Jud!</summary>
+        public string MadeInTribute { get; set; }
 
         ///<summary>Web</summary>
         public string WebButton { get; set; }
