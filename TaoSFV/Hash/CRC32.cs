@@ -1,39 +1,17 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 
 namespace TaoSFV.Hash
 {
     /// <summary>
     /// Calculates a 32-bit Cyclic Redundancy Checksum (CRC) using the
-    /// same polynomial used by Zip.
+    /// same polynomial used by Zip (CRC-32/ISO-HDLC, as used in SFV files).
     /// </summary>
     public static class CRC32
     {
-        private static readonly uint[] crc32Table = new uint[256];
-        private const int BUFFER_SIZE = 8192;
-
-        static CRC32()
-        {
-            unchecked
-            {
-                // This is the official polynomial used by CRC32 in PKZip.
-                // Often the polynomial is shown reversed as 0x04C11DB7.
-                const uint dwPolynomial = 0xEDB88320;
-
-                for (uint i = 0; i < 256; i++)
-                {
-                    uint dwCrc = i;
-                    for (uint j = 8; j > 0; j--)
-                    {
-                        if ((dwCrc & 1) == 1)
-                            dwCrc = (dwCrc >> 1) ^ dwPolynomial;
-                        else
-                            dwCrc >>= 1;
-                    }
-                    crc32Table[i] = dwCrc;
-                }
-            }
-        }
+        // large reads keep the vectorized System.IO.Hashing.Crc32 busy; 8 KB reads were the bottleneck
+        private const int BUFFER_SIZE = 1024 * 1024;
 
         /// <summary>
         /// Returns the CRC32 Checksum of a specified file as a string.
@@ -100,25 +78,21 @@ namespace TaoSFV.Hash
             if (stream == null)
                 throw new ArgumentNullException("stream");
 
-            unchecked
+            stream.Position = 0;
+            System.IO.Hashing.Crc32 crc32 = new System.IO.Hashing.Crc32();
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(BUFFER_SIZE);
+            try
             {
-                stream.Position = 0;
-                uint crc32Result = 0xFFFFFFFF;
-                byte[] buffer = new byte[BUFFER_SIZE];
-
-                int count = stream.Read(buffer, 0, BUFFER_SIZE);
-                while (count > 0)
-                {
-                    for (int i = 0; i < count; i++)
-                    {
-                        crc32Result = ((crc32Result) >> 8) ^ crc32Table[(buffer[i]) ^
-                                                                        ((crc32Result) & 0x000000FF)];
-                    }
-                    count = stream.Read(buffer, 0, BUFFER_SIZE);
-                }
-
-                return ~crc32Result;
+                int count;
+                while ((count = stream.Read(buffer, 0, BUFFER_SIZE)) > 0)
+                    crc32.Append(new ReadOnlySpan<byte>(buffer, 0, count));
             }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            return crc32.GetCurrentHashAsUInt32();
         }
 
         /// <summary>

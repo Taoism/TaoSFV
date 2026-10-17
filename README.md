@@ -23,6 +23,7 @@ Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (t
 ```
 dotnet build TaoSFV\TaoSFV.csproj -c Release
 dotnet publish TaoSFV\TaoSFV.csproj -c Release -o publish
+dotnet test TaoSFV.Tests
 ```
 
 `TaoSFVLanguage` regenerates `TaoSFV/Localization/*.Generated.cs` after adding strings to `TaoSFV/languages/english.txt`; other language files fall back to English for missing keys.
@@ -33,6 +34,10 @@ dotnet publish TaoSFV\TaoSFV.csproj -c Release -o publish
 - Dark mode via WinForms' built-in color modes, with fixes for the group headers, status bar and tab pages.
 - Settings and the checksum cache moved from SQL Server Compact (`*.sdf`) to SQLite (`settings.db`, `cache.db` in `%LOCALAPPDATA%\TaoSFV`). Old `.sdf` settings are not migrated; defaults are used on first run.
 - Stopping a check no longer relies on `Thread.Abort` (unsupported on .NET); MD5/SHA-1 hashing is now thread-safe.
+- Checksum files: UTF-8 is detected (with or without a BOM, falling back to Windows-1252), and files are written as UTF-8 when a name doesn't fit Windows-1252, so non-Latin file names work.
+- md5sum/sha1sum text-mode lines (`hash  name`, the GNU default) are now read correctly; previously every file showed as missing.
+- CRC32 uses the vectorized `System.IO.Hashing.Crc32` with 1 MB reads (about 4x faster); MD5/SHA-1 also read in 1 MB blocks.
+- File associations and the Explorer "TaoSFV" menu are registered per user (HKCU), with no administrator prompt; Tools > Unregister File Types removes them.
 - Links that pointed at the defunct cdtag.com (web, update check, bug reports) now go to the original ilSFV GitHub repository.
 
 ## Project Status

@@ -59,6 +59,9 @@ namespace TaoSFV.Localization
         ///<summary>Register File Types</summary>
         public string Menu_Tools_RegisterFileTypes { get; set; }
 
+        ///<summary>Unregister File Types</summary>
+        public string Menu_Tools_UnregisterFileTypes { get; set; }
+
         ///<summary>&View</summary>
         public string Menu_View { get; set; }
 
@@ -212,11 +215,17 @@ namespace TaoSFV.Localization
         ///<summary>Confirmation Needed</summary>
         public string OverwriteMultipleFiles_Title { get; set; }
 
-        ///<summary>{0}\n\nTry running as Administrator.</summary>
+        ///<summary>{0}</summary>
         public string RegisterFileTypesError_Message { get; set; }
 
         ///<summary>Register File Types</summary>
         public string RegisterFileTypesError_Title { get; set; }
+
+        ///<summary>TaoSFV now opens .sfv, .md5 and .sha1 files for your account, and adds a TaoSFV menu to files and folders in Explorer.</summary>
+        public string RegisterFileTypes_Message { get; set; }
+
+        ///<summary>TaoSFV file associations and Explorer menus were removed for your account.</summary>
+        public string UnregisterFileTypes_Message { get; set; }
 
         ///<summary>Copy File Name(s)</summary>
         public string CopyFileNamesContextMenu { get; set; }

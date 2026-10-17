@@ -88,24 +88,5 @@ namespace TaoSFV.Properties {
             }
         }
         
-        /// <summary>
-        ///   Looks up a localized string similar to Windows Registry Editor Version 5.00
-        ///
-        ///[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\CommandStore\shell\taosfv.sfv]
-        ///@=&quot;Create SFV...&quot;
-        ///
-        ///[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\CommandStore\shell\taosfv.sfv\command]
-        ///@=&quot;{0} /create sfv \&quot;%1\&quot;&quot;
-        ///
-        ///[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\CommandStore\shell\taosfv.md5]
-        ///@=&quot;Create MD5...&quot;
-        ///
-        ///[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\CommandStore\sh [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string regfile {
-            get {
-                return ResourceManager.GetString("regfile", resourceCulture);
-            }
-        }
     }
 }

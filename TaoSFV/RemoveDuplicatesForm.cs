@@ -385,7 +385,7 @@ namespace TaoSFV
 
                         string strShaBang = shabang.ToString();
 
-                        File.WriteAllText(_set.VerificationFileName, strShaBang, Encoding.GetEncoding(MainForm.CODE_PAGE));
+                        ChecksumFileFormat.WriteAllText(_set.VerificationFileName, strShaBang);
                         Cursor.Current = Cursors.Default;
                     }
                 }

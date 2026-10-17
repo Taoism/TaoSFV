@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
-using TaoSFV.FileAssociation;
 using TaoSFV.Localization;
 using TaoSFV.Model.Settings;
 using Microsoft.Data.Sqlite;
@@ -183,36 +182,7 @@ namespace TaoSFV
         {
             try
             {
-                RegisterFileType("md5");
-                RegisterFileType("sfv");
-                RegisterFileType("sha1");
-
-                //string[] keys = new[] { "*", "Folders" };
-
-                /*RegistryWrapper reg = new RegistryWrapper();
-
-                foreach (string id in keys)
-                {
-                    reg.Write(string.Format(@"{0}\shell\TaoSFV", id), "MUIVerb", "TaoSFV");
-                    reg.Write(string.Format(@"{0}\shell\TaoSFV", id), "MultiSelectModel", "Player");
-                    reg.Write(string.Format(@"{0}\shell\TaoSFV", id), "SubCommands", "taosfv.sfv;taosfv.md5;taosfv.sha1");
-                }*/
-
-                string path = ExecutablePath;
-
-                string body = string.Format(Properties.Resources.regfile, path);
-
-                string regPath = Path.Combine(AppDataPath, "taosfv.reg");
-
-                File.WriteAllText(regPath, body);
-                string windowsDir = Path.GetDirectoryName(Environment.GetFolderPath(Environment.SpecialFolder.System));
-                string regedit = string.Format("{0}\\regedit.exe", windowsDir);
-                ProcessStartInfo pi = new ProcessStartInfo();
-                pi.UseShellExecute = false;
-                pi.FileName = regedit;
-                pi.Arguments = regPath;
-                Process p = Process.Start(pi);
-                p.WaitForExit();
+                FileTypeRegistration.Register(ExecutablePath);
             }
             catch (Exception ex)
             {
@@ -313,32 +283,6 @@ namespace TaoSFV
                 Cursor.Current = Cursors.Default;
                 form.ShowDialog();
             }
-        }
-
-        private static void RegisterFileType(string extensionType)
-        {
-            string id = "TaoSFV-" + extensionType.ToUpper();
-            FileAssociationInfo fai = new FileAssociationInfo("." + extensionType.ToLower());
-            if (fai.Exists)
-                fai.Delete();
-            fai.Create(id);
-
-            string path = ExecutablePath;
-
-            ProgramAssociationInfo pai = new ProgramAssociationInfo(fai.ProgID);
-            if (pai.Exists)
-                pai.Delete();
-
-            pai.Create
-            (
-                string.Format("{0} File", extensionType.ToUpper()),
-                new ProgramVerb("Open", path + " \"%1\"")
-            );
-
-            /*RegistryWrapper reg = new RegistryWrapper();
-            reg.Write(string.Format(@"{0}\shell\TaoSFV", id), "MUIVerb", "TaoSFV");
-            reg.Write(string.Format(@"{0}\shell\TaoSFV", id), "MultiSelectModel", "Single");
-            reg.Write(string.Format(@"{0}\shell\TaoSFV", id), "SubCommands", "taosfv.verify");*/
         }
 
         /// <summary>

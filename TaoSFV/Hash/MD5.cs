@@ -78,7 +78,7 @@ namespace TaoSFV.Hash
                 throw new ArgumentNullException("stream");
 
             stream.Position = 0;
-            return System.Security.Cryptography.MD5.HashData(stream);
+            return StreamHasher.Hash(HashAlgorithmName.MD5, stream);
         }
 
         /// <summary>

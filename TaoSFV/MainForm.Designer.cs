@@ -61,6 +61,7 @@
             this.miTruncateFileNames = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.miRegisterFileTypes = new System.Windows.Forms.ToolStripMenuItem();
+            this.miUnregisterFileTypes = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuView = new System.Windows.Forms.ToolStripMenuItem();
             this.miHideGood = new System.Windows.Forms.ToolStripMenuItem();
             this.miCommentResultPane = new System.Windows.Forms.ToolStripMenuItem();
@@ -307,7 +308,8 @@
             this.miFindDuplicateFiles,
             this.miTruncateFileNames,
             this.toolStripSeparator6,
-            this.miRegisterFileTypes});
+            this.miRegisterFileTypes,
+            this.miUnregisterFileTypes});
             this.mnuTools.Name = "mnuTools";
             this.mnuTools.Size = new System.Drawing.Size(49, 20);
             this.mnuTools.Text = "&Tools";
@@ -357,6 +359,13 @@
             this.miRegisterFileTypes.Size = new System.Drawing.Size(326, 22);
             this.miRegisterFileTypes.Text = "Register File &Types";
             this.miRegisterFileTypes.Click += new System.EventHandler(this.miRegisterFileTypes_Click);
+            //
+            // miUnregisterFileTypes
+            //
+            this.miUnregisterFileTypes.Name = "miUnregisterFileTypes";
+            this.miUnregisterFileTypes.Size = new System.Drawing.Size(326, 22);
+            this.miUnregisterFileTypes.Text = "Unregister File Types";
+            this.miUnregisterFileTypes.Click += new System.EventHandler(this.miUnregisterFileTypes_Click);
             // 
             // mnuView
             // 
@@ -823,6 +832,7 @@
 		private System.Windows.Forms.ToolStripMenuItem miCheckForUpdates;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
 		private System.Windows.Forms.ToolStripMenuItem miRegisterFileTypes;
+		private System.Windows.Forms.ToolStripMenuItem miUnregisterFileTypes;
 		private System.Windows.Forms.ToolStripMenuItem miNewSHA1;
 		private System.Windows.Forms.ToolStripMenuItem miNewMD5;
 		private System.Windows.Forms.ToolStripMenuItem miNewSFV;

@@ -46,6 +46,7 @@ Menu_Tools_UseCachedResults                       = Use &Cached Results
 Menu_Tools_FindDeleteDuplicateFilesUsingChecksum  = Find/Delete Duplicate Files Using Checksum...
 Menu_Tools_TruncateFileNames                      = &Truncate File Names...
 Menu_Tools_RegisterFileTypes                      = Register File Types
+Menu_Tools_UnregisterFileTypes                    = Unregister File Types
 
 Menu_View                                         = &View
 Menu_View_HideGood                                = &Hide Good
@@ -110,8 +111,10 @@ OverwriteFile_Title                               = Confirmation Needed
 OverwriteMultipleFiles_Message                    = {0:#,0} existing checksum file(s) will be overwritten. Continue?
 OverwriteMultipleFiles_Title                      = Confirmation Needed
 
-RegisterFileTypesError_Message                    = {0}\n\nTry running as Administrator.
+RegisterFileTypesError_Message                    = {0}
 RegisterFileTypesError_Title                      = Register File Types
+RegisterFileTypes_Message                         = TaoSFV now opens .sfv, .md5 and .sha1 files for your account, and adds a TaoSFV menu to files and folders in Explorer.
+UnregisterFileTypes_Message                       = TaoSFV file associations and Explorer menus were removed for your account.
 
 CopyFileNamesContextMenu                          = Copy File Name(s)
 CopyPathAndFileNamesContextMenu                   = Copy Path + File Name(s)
