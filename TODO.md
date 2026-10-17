@@ -41,6 +41,11 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 - [ ] **Sharper text on high-DPI screens.** Windows are laid out in fixed pixels and run system-DPI-aware.
 - [ ] **Comments template after importing.** Offer to update a header that still says "ilSFV" or links to
       cdtag.com. (This machine's TaoSFV template says "Using ilSFV" because its database predates the rename.)
+- [ ] **Redesign the icon and logo.** TaoSFV still uses ilSFV's "MiniDisc Check" icon. Make a TaoSFV icon and logo
+      (light and dark backgrounds, 16-256 px) and replace it everywhere it appears: `TaoSFV.exe` and `taosfv-cli.exe`
+      (`ApplicationIcon`), the window and tray icons (`MainForm.resx`), the Preferences > About picture, the
+      `.sfv`/`.md5`/... file-type icon and Explorer menu icon (both use the exe's icon), the installer
+      (`SetupIconFile` in `taosfv-setup.iss`), and the README.
 - [ ] **Accessibility of the file list.** Set headers are ordinary rows in the virtual list; give them a distinct
       name/role for screen readers.
 
