@@ -271,7 +271,7 @@ Exit codes:
 				{
 					try
 					{
-						checksums[i] = FileVerifier.ComputeChecksum(algorithm, new FileInfo(ordered[i]), context);
+						checksums[i] = FileVerifier.HashFile(algorithm, new FileInfo(ordered[i]), context);
 					}
 					catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
 					{

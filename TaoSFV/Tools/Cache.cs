@@ -124,22 +124,46 @@ namespace TaoSFV
 			}
 		}
 
+		private const int MaxBatch = 500;
+
 		private static void WriterLoop()
 		{
-			foreach (PendingEntry entry in _pending.GetConsumingEnumerable())
+			foreach (PendingEntry first in _pending.GetConsumingEnumerable())
 			{
+				// whatever has queued up goes in one transaction on one connection; a connection and commit per row
+				// made checking thousands of small files wait seconds for the cache
+				List<PendingEntry> batch = new List<PendingEntry> { first };
+				PendingEntry next;
+				while (batch.Count < MaxBatch && _pending.TryTake(out next))
+					batch.Add(next);
+
 				try
 				{
-					string sql = string.Format("insert into {0} (FileName, LastWriteUtc, FileLength, {1}) values(@FileName, @LastWriteUtc, @FileLength, @Checksum);",
-						entry.Algorithm.CacheTable, entry.Algorithm.CacheColumn);
 					using (SqliteConnection conn = Program.GetOpenCacheConnection())
-					using (SqliteCommand cmd = new SqliteCommand(sql, conn))
 					{
-						cmd.Parameters.AddWithValue("@FileName", entry.FileName);
-						cmd.Parameters.AddWithValue("@LastWriteUtc", entry.LastWriteUtc);
-						cmd.Parameters.AddWithValue("@FileLength", entry.Length);
-						cmd.Parameters.AddWithValue("@Checksum", entry.Checksum);
-						cmd.ExecuteNonQuery();
+						Database.Execute(conn, "begin;");
+						try
+						{
+							foreach (PendingEntry entry in batch)
+							{
+								string sql = string.Format("insert into {0} (FileName, LastWriteUtc, FileLength, {1}) values(@FileName, @LastWriteUtc, @FileLength, @Checksum);",
+									entry.Algorithm.CacheTable, entry.Algorithm.CacheColumn);
+								using (SqliteCommand cmd = new SqliteCommand(sql, conn))
+								{
+									cmd.Parameters.AddWithValue("@FileName", entry.FileName);
+									cmd.Parameters.AddWithValue("@LastWriteUtc", entry.LastWriteUtc);
+									cmd.Parameters.AddWithValue("@FileLength", entry.Length);
+									cmd.Parameters.AddWithValue("@Checksum", entry.Checksum);
+									cmd.ExecuteNonQuery();
+								}
+							}
+							Database.Execute(conn, "commit;");
+						}
+						catch
+						{
+							Database.Execute(conn, "rollback;");
+							throw;
+						}
 					}
 				}
 				catch (Exception ex)
@@ -148,7 +172,7 @@ namespace TaoSFV
 				}
 				finally
 				{
-					Interlocked.Decrement(ref _inFlight);
+					Interlocked.Add(ref _inFlight, -batch.Count);
 				}
 			}
 		}

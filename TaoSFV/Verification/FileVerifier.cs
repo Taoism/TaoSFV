@@ -219,10 +219,26 @@ namespace TaoSFV.Verification
 			}
 		}
 
-		/// <summary>Hashes a file, reporting progress through the context and honoring its pause and cancellation.</summary>
-		public static string ComputeChecksum(ChecksumAlgorithm algorithm, FileInfo fileInfo, VerifyContext context)
+		/// <summary>
+		/// Hashes a file, counting its bytes in the context's progress (tracked as `file`) and honoring pause and cancellation.
+		/// </summary>
+		public static string HashFile(ChecksumAlgorithm algorithm, ChecksumFile file, VerifyContext context)
 		{
-			return ComputeChecksum(algorithm, fileInfo, context, null);
+			long[] counter = context.Begin(file);
+			try
+			{
+				return ComputeChecksum(algorithm, file.FileInfo, context, counter);
+			}
+			finally
+			{
+				context.End(file, file.FileInfo.Length);
+			}
+		}
+
+		/// <summary>Hashes a file that isn't part of a set (counted in the context's progress).</summary>
+		public static string HashFile(ChecksumAlgorithm algorithm, FileInfo fileInfo, VerifyContext context)
+		{
+			return HashFile(algorithm, new ChecksumFile(null) { FileInfo = fileInfo }, context);
 		}
 
 		private static string ComputeChecksum(ChecksumAlgorithm algorithm, FileInfo fileInfo, VerifyContext context, long[] counter)

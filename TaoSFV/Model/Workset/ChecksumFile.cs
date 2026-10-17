@@ -26,6 +26,9 @@ namespace TaoSFV.Model.Workset
 		}
 
 		public DateTime CacheLastWriteUtc { get; set; }
+
+		/// <summary>Why the file couldn't be read, when State is Unreadable.</summary>
+		public string ErrorMessage { get; set; }
 		public long CacheLength { get; set; }
 		public string Guid { get; private set; }
 		public ChecksumSet Set { get; private set; }

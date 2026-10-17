@@ -62,6 +62,10 @@ dotnet test TaoSFV.Tests
 - SHA-256 and SHA-512 files (`.sha256`, `.sha512`), including in the cache, Explorer menus and File → New.
 - "md5sum compatibility" (Preferences > Creating) now writes `/` separators, LF line endings and `#` comments, so GNU `md5sum -c` / `sha256sum -c` read the files without warnings. SFV files keep the hkSFV layout.
 - Paths longer than 260 characters work (the apps are long-path aware; Windows' LongPathsEnabled setting must be on). Moving a failed file to the Recycle Bin still can't handle such paths, so it is left in place.
+- Creating checksum files and Find Renamed Files also run in the background (Create reads several files at once on SSDs).
+- A file that can't be read (locked, no access) is marked Unreadable (purple) with the reason as a tooltip, and the run carries on instead of stopping.
+- The file list is a virtual list, so sets with thousands of files load and update instantly (3,000 files: create 32.7 s -> 0.9 s, verify 8.3 s -> 0.9 s). Sets are shown with header rows.
+- Cache writes are batched in transactions.
 - Fixed an intermittent startup error ("A generic error occurred in GDI+") that left the main window invisible.
 - Links that pointed at the defunct cdtag.com (web, update check, bug reports) now go to the original ilSFV GitHub repository.
 

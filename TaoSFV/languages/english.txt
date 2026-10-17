@@ -41,6 +41,7 @@ Menu_Legend                                       = &Legend
 Menu_Legend_FileOK                                = File OK
 Menu_Legend_FileBad                               = File Bad
 Menu_Legend_FileNotFound                          = File Not Found
+Menu_Legend_FileUnreadable                        = File Unreadable
 Menu_Legend_FileUntestedUnknown                   = Untested-Unknown
 
 Menu_Tools                                        = &Tools
@@ -67,6 +68,7 @@ PartsLabel                                        = Parts:
 GoodLabel                                         = Good:
 BadLabel                                          = Bad:
 MissingLabel                                      = Missing:
+UnreadableLabel                                   = Unreadable:
 
 HideGoodCheckBox                                  = Hide Good
 PauseButton                                       = &Pause

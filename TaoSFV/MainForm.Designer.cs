@@ -56,6 +56,7 @@
             this.miFileBad = new System.Windows.Forms.ToolStripMenuItem();
             this.miFileNotFound = new System.Windows.Forms.ToolStripMenuItem();
             this.miFileUntested = new System.Windows.Forms.ToolStripMenuItem();
+            this.miFileUnreadable = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuTools = new System.Windows.Forms.ToolStripMenuItem();
             this.miFindRenamedFiles = new System.Windows.Forms.ToolStripMenuItem();
             this.miUseCachedResults = new System.Windows.Forms.ToolStripMenuItem();
@@ -78,6 +79,7 @@
             this.lblGood = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblBad = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblMissing = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblUnreadable = new System.Windows.Forms.ToolStripStatusLabel();
             this.splitContainer1 = new TaoSFV.SafeSplitContainer();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.miCopyFileNames = new System.Windows.Forms.ToolStripMenuItem();
@@ -295,6 +297,7 @@
             this.miFileOK,
             this.miFileBad,
             this.miFileNotFound,
+            this.miFileUnreadable,
             this.miFileUntested});
             this.mnuLegend.Name = "mnuLegend";
             this.mnuLegend.Size = new System.Drawing.Size(61, 20);
@@ -327,6 +330,12 @@
             this.miFileUntested.Name = "miFileUntested";
             this.miFileUntested.Size = new System.Drawing.Size(179, 22);
             this.miFileUntested.Text = "Untested-Unknown";
+            //
+            // miFileUnreadable
+            //
+            this.miFileUnreadable.Name = "miFileUnreadable";
+            this.miFileUnreadable.Size = new System.Drawing.Size(179, 22);
+            this.miFileUnreadable.Text = "File Unreadable";
             // 
             // mnuTools
             // 
@@ -451,7 +460,8 @@
             this.lblParts,
             this.lblGood,
             this.lblBad,
-            this.lblMissing});
+            this.lblMissing,
+            this.lblUnreadable});
             this.statusStrip1.Location = new System.Drawing.Point(0, 584);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(1184, 24);
@@ -524,6 +534,18 @@
             this.lblMissing.Size = new System.Drawing.Size(55, 19);
             this.lblMissing.Text = "Missing:";
             this.lblMissing.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // lblUnreadable
+            //
+            this.lblUnreadable.AutoSize = false;
+            this.lblUnreadable.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top)
+                        | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right)
+                        | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
+            this.lblUnreadable.Name = "lblUnreadable";
+            this.lblUnreadable.Size = new System.Drawing.Size(55, 19);
+            this.lblUnreadable.Text = "Unreadable:";
+            this.lblUnreadable.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.lblUnreadable.Visible = false;
             // 
             // splitContainer1
             // 
@@ -764,7 +786,7 @@
             this.lvwFiles.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.lvwFiles.Name = "lvwFiles";
             this.lvwFiles.Size = new System.Drawing.Size(590, 498);
-            this.lvwFiles.StateImageList = this.imageList1;
+            this.lvwFiles.SmallImageList = this.imageList1;
             this.lvwFiles.TabIndex = 0;
             this.lvwFiles.UseCompatibleStateImageBehavior = false;
             this.lvwFiles.View = System.Windows.Forms.View.Details;
@@ -830,6 +852,7 @@
         private System.Windows.Forms.ToolStripMenuItem miFileBad;
         private System.Windows.Forms.ToolStripMenuItem miFileNotFound;
         private System.Windows.Forms.ToolStripMenuItem miFileUntested;
+        private System.Windows.Forms.ToolStripMenuItem miFileUnreadable;
         private System.Windows.Forms.ToolStripMenuItem miHideGood;
         private System.Windows.Forms.ToolStripMenuItem miCommentResultPane;
         private System.Windows.Forms.ToolStripMenuItem miAbout;
@@ -843,6 +866,7 @@
         private System.Windows.Forms.ToolStripStatusLabel lblGood;
         private System.Windows.Forms.ToolStripStatusLabel lblBad;
         private System.Windows.Forms.ToolStripStatusLabel lblMissing;
+        private System.Windows.Forms.ToolStripStatusLabel lblUnreadable;
         private TaoSFV.SafeSplitContainer splitContainer1;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.TabControl tabControl1;

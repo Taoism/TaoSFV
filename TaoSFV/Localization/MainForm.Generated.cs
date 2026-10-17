@@ -47,6 +47,9 @@ namespace TaoSFV.Localization
         ///<summary>File Not Found</summary>
         public string Menu_Legend_FileNotFound { get; set; }
 
+        ///<summary>File Unreadable</summary>
+        public string Menu_Legend_FileUnreadable { get; set; }
+
         ///<summary>Untested-Unknown</summary>
         public string Menu_Legend_FileUntestedUnknown { get; set; }
 
@@ -109,6 +112,9 @@ namespace TaoSFV.Localization
 
         ///<summary>Missing:</summary>
         public string MissingLabel { get; set; }
+
+        ///<summary>Unreadable:</summary>
+        public string UnreadableLabel { get; set; }
 
         ///<summary>Hide Good</summary>
         public string HideGoodCheckBox { get; set; }

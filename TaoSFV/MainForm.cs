@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Microsoft.Data.Sqlite;
@@ -9,6 +10,8 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
 using TaoSFV.Verification;
 using System.Threading.Tasks;
@@ -128,6 +131,14 @@ export results to text file
         {
             InitializeComponent();
             ThemeHelper.Apply(this);
+
+            // state image 4 (Unreadable): a purple square derived from the blue "untested" one
+            Bitmap unreadableIcon = MakeUnreadableIcon(Properties.Resources.Bullet_6);
+            imageList1.Images.Add(unreadableIcon);
+            miFileUnreadable.Image = unreadableIcon;
+            lvwFiles.ShowItemToolTips = true;
+            lvwFiles.VirtualMode = true;
+            lvwFiles.RetrieveVirtualItem += lvwFiles_RetrieveVirtualItem;
 
             Language.Changed += delegate { SetLanguage(); };
             SetLanguage();
@@ -723,12 +734,14 @@ export results to text file
             int statusWidth = statusStrip1.Width / 2 + 5;
             lblStatus.Width = statusWidth;
 
-            int partsWidth = (statusStrip1.Width - statusWidth) / 5 - 1;
+            int partCount = lblUnreadable.Visible ? 6 : 5;
+            int partsWidth = (statusStrip1.Width - statusWidth) / partCount - 1;
             lblSets.Width = partsWidth;
             lblParts.Width = partsWidth;
             lblGood.Width = partsWidth;
             lblBad.Width = partsWidth;
             lblMissing.Width = partsWidth;
+            lblUnreadable.Width = partsWidth;
         }
 
         private void SetStatusText(string text)
@@ -832,25 +845,11 @@ export results to text file
             {
                 if (!_workingOnList)
                 {
-                    lvwFiles.Items.Clear();
-                    lvwFiles.Groups.Clear();
+                    ClearFileItems();
                     Application.DoEvents();
                 }
 
-                ListViewGroup group = new ListViewGroup(lvwFiles.Groups.Count.ToString(), Path.GetFileName(fileName));
-                lvwFiles.Groups.Add(group);
-
-                foreach (ChecksumFile file in set.Files)
-                {
-                    ListViewItem item = new ListViewItem(new[] { file.FileName, file.Guid });
-                    item.Tag = file;
-                    item.StateImageIndex = 0;
-                    item.Group = group;
-                    lvwFiles.Items.Add(item);
-                }
-
-                if (lvwFiles.Items.Count != 0)
-                    lvwFiles.AutoResizeColumn(0, ColumnHeaderAutoResizeStyle.ColumnContent);
+                AddSetRows(set);
             }
             finally
             {
@@ -938,34 +937,7 @@ export results to text file
             if (_sets.Count == 0)
                 return;
 
-            ListViewBeginUpdate();
-            try
-            {
-                lvwFiles.Items.Clear();
-                lvwFiles.Groups.Clear();
-
-                foreach (ChecksumSet set in _sets)
-                {
-                    ListViewGroup group = new ListViewGroup(lvwFiles.Groups.Count.ToString(), Path.GetFileName(set.VerificationFileName));
-                    lvwFiles.Groups.Add(group);
-
-                    foreach (ChecksumFile file in set.Files)
-                    {
-                        if (file.State == ChecksumFileState.OK && Program.Settings.General.HideGoodFiles)
-                            continue;
-
-                        ListViewItem item = new ListViewItem(new[] { file.FileName, file.Guid });
-                        item.Tag = file;
-                        item.StateImageIndex = (int)file.State;
-                        item.Group = group;
-                        lvwFiles.Items.Add(item);
-                    }
-                }
-            }
-            finally
-            {
-                ListViewEndUpdate();
-            }
+            RebuildRows();
 
             lvwFiles.Focus();
         }
@@ -993,6 +965,7 @@ export results to text file
         private int _files_parts;
         private int _files_ok;
         private int _files_missing;
+        private int _files_unreadable;
         private int _files_bad;
         private int _set_index;
 
@@ -1020,18 +993,8 @@ export results to text file
             VerifyContext context = new VerifyContext(_verifyCancel.Token, _pauseGate);
             VerifyOptions options = VerifyOptions.FromSettings(Program.Settings);
 
-            ChecksumFile currentFile = null;
-            Timer progressTimer = new Timer { Interval = 100 };
-            progressTimer.Tick += (sender, e) =>
-            {
-                if (_pause)
-                    return;
-
-                UpdateProgressText(context.BytesProcessed, start);
-                double? fileProgress = currentFile == null ? null : context.GetFileProgress(currentFile);
-                if (fileProgress != null)
-                    progressBar1.Value = (int)(fileProgress.Value * 100);
-            };
+            _currentRunFile = null;
+            Timer progressTimer = CreateProgressTimer(context, start, () => _currentRunFile);
 
             try
             {
@@ -1051,6 +1014,7 @@ export results to text file
                 _files_ok = 0;
                 _files_bad = 0;
                 _files_missing = 0;
+                _files_unreadable = 0;
 
                 progressTimer.Start();
 
@@ -1067,50 +1031,10 @@ export results to text file
                     lvwFiles.Focus();
 
                     IReadOnlyDictionary<string, ChecksumFile> cache = await Task.Run(() => FileVerifier.LoadCache(set, options));
-                    int parallelism = DiskInfo.GetParallelism(set.Directory);
-                    List<Task<ChecksumFile>> running = new List<Task<ChecksumFile>>();
 
-                    for (int i = 0; i < set.Files.Count; i++)
-                    {
-                        if (_queueHideGood)
-                            ApplyHideGood();
-
-                        while (_pause && !_queueStop)
-                        {
-                            if (_queueHideGood)
-                                ApplyHideGood();
-                            await Task.Delay(50);
-                        }
-
-                        if (_queueStop)
-                            break;
-
-                        LoadNewSets();
-
-                        ChecksumFile file = set.Files[i];
-                        ListViewItem listItem = lvwFiles.FindItemWithText(file.Guid);
-                        if (listItem != null)
-                        {
-                            listItem.Selected = true;
-                            if (Program.Settings.General.AutoScrollFileList)
-                                listItem.EnsureVisible();
-                        }
-
-                        currentFile = file;
-                        progressBar1.Value = 0;
-
-                        running.Add(Task.Run(() =>
-                        {
-                            FileVerifier.Verify(set, file, options, cache, context);
-                            return file;
-                        }));
-
-                        while (running.Count >= parallelism)
-                            await CompleteOneFile(running);
-                    }
-
-                    while (running.Count > 0)
-                        await CompleteOneFile(running);
+                    await ProcessFilesAsync(set, DiskInfo.GetParallelism(set.Directory), context.Cancel,
+                        file => FileVerifier.Verify(set, file, options, cache, context),
+                        ApplyFileResult);
 
                     if (_queueStop)
                         break;
@@ -1118,11 +1042,7 @@ export results to text file
                     progressBar1.Value = 100;
 
                     if (Program.Settings.Check.AutoFindRenames && _files_missing != 0)
-                    {
-                        int tmp;
-                        FindRenamedFiles(set, out tmp);
-                        UpdateProgressBarsAndText(context.BytesProcessed, start);
-                    }
+                        await FindRenamedFilesAsync(set, context);
 
                     if (_queueHideGood)
                         ApplyHideGood();
@@ -1135,7 +1055,7 @@ export results to text file
 
                 SetStatusText(Language.MainForm.Status_UpdatingCache);
                 TimeSpan timeSpent = DateTime.Now - start;
-                Program.Settings.Statistics.AddStats(_files_ok + _files_bad + _files_missing, _set_index, context.BytesProcessed / 1024 / 1024, _files_ok, timeSpent);
+                Program.Settings.Statistics.AddStats(_files_ok + _files_bad + _files_missing + _files_unreadable, _set_index, context.BytesProcessed / 1024 / 1024, _files_ok, timeSpent);
                 await Task.Run(() => Cache.Clean());
 
                 if (Program.Settings.Check.AutoCloseWhenDoneChecking)
@@ -1153,6 +1073,8 @@ export results to text file
             {
                 progressTimer.Stop();
                 progressTimer.Dispose();
+                if (!IsDisposed)
+                    FlushStatusBar();
 
                 long bytesProcessed = context.BytesProcessed;
                 TimeSpan totalTime = DateTime.Now - start;
@@ -1189,54 +1111,321 @@ export results to text file
             }
         }
 
-        /// <summary>Waits for one running file, applies its result and rethrows its error (after stopping the rest).</summary>
-        private async Task CompleteOneFile(List<Task<ChecksumFile>> running)
-        {
-            Task<ChecksumFile> done = await Task.WhenAny(running);
-            running.Remove(done);
+        // the file most recently started, for the progress timer to select (written by the producer thread)
+        private volatile ChecksumFile _currentRunFile;
 
-            ChecksumFile file;
-            try
+        /// <summary>
+        /// Runs `work` for each file of a set on the thread pool, up to `parallelism` at a time, started in list order.
+        /// A background producer starts files and queues results; this method (on the UI thread) applies them in
+        /// batches 20 times a second, so the UI does a fixed amount of work however many files there are.
+        /// A file that can't be read becomes Unreadable; any other error stops the run and is rethrown.
+        /// </summary>
+        private async Task ProcessFilesAsync(ChecksumSet set, int parallelism, CancellationToken cancel, Action<ChecksumFile> work, Action<ChecksumFile> onDone)
+        {
+            ConcurrentQueue<KeyValuePair<ChecksumFile, Exception>> finished = new ConcurrentQueue<KeyValuePair<ChecksumFile, Exception>>();
+            List<ChecksumFile> files = new List<ChecksumFile>(set.Files);
+
+            Task producer = Task.Run(async () =>
             {
-                file = await done;
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-            catch (Exception)
-            {
-                // same as before: an unreadable file stops the run and shows the error
-                _queueStop = true;
-                _verifyCancel.Cancel();
-                try
+                List<Task> running = new List<Task>();
+                using (SemaphoreSlim slots = new SemaphoreSlim(parallelism))
                 {
+                    foreach (ChecksumFile file in files)
+                    {
+                        try
+                        {
+                            _pauseGate.WaitWhilePaused(cancel); // don't start files while paused
+                            await slots.WaitAsync(cancel);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break;
+                        }
+
+                        _currentRunFile = file;
+                        running.Add(Task.Run(() =>
+                        {
+                            Exception error = null;
+                            try
+                            {
+                                work(file);
+                            }
+                            catch (Exception ex)
+                            {
+                                error = ex;
+                            }
+                            finally
+                            {
+                                slots.Release();
+                            }
+                            finished.Enqueue(new KeyValuePair<ChecksumFile, Exception>(file, error));
+                        }));
+                    }
+
                     await Task.WhenAll(running);
                 }
-                catch (Exception)
+            });
+
+            Exception fatal = null;
+            while (true)
+            {
+                bool producerDone = producer.IsCompleted;
+
+                KeyValuePair<ChecksumFile, Exception> result;
+                while (finished.TryDequeue(out result))
                 {
+                    ChecksumFile file = result.Key;
+                    Exception error = result.Value;
+
+                    if (error is OperationCanceledException)
+                        continue; // stopped before it finished; stays unprocessed
+
+                    if (error is IOException || error is UnauthorizedAccessException)
+                    {
+                        file.State = ChecksumFileState.Unreadable;
+                        file.ErrorMessage = error.Message;
+                    }
+                    else if (error != null)
+                    {
+                        if (fatal == null)
+                            fatal = error;
+                        StopWork();
+                        continue;
+                    }
+
+                    onDone(file);
                 }
-                running.Clear();
-                throw;
+
+                if (producerDone)
+                    break;
+
+                if (_queueHideGood)
+                    ApplyHideGood();
+                LoadNewSets();
+
+                await Task.Delay(50);
             }
 
+            await producer;
+            if (fatal != null)
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(fatal).Throw();
+        }
+
+        /// <summary>Counts a finished file and shows its state.</summary>
+        private void ApplyFileResult(ChecksumFile file)
+        {
             if (file.State == ChecksumFileState.OK)
                 _files_ok++;
             else if (file.State == ChecksumFileState.Bad)
                 _files_bad++;
             else if (file.State == ChecksumFileState.Missing)
                 _files_missing++;
+            else if (file.State == ChecksumFileState.Unreadable)
+                _files_unreadable++;
 
-            UpdateStatusBar();
+            // the progress timer redraws the status bar; doing it per file made runs over many small files UI-bound
+            _statusBarDirty = true;
 
-            ListViewItem listItem = lvwFiles.FindItemWithText(file.Guid);
-            if (listItem != null)
+            if (Program.Settings.General.HideGoodFiles && file.State == ChecksumFileState.OK)
+                _rowsDirty = true; // the progress timer rebuilds the rows
+            else
+                RedrawFile(file);
+        }
+
+        private bool _statusBarDirty;
+
+        /// <summary>
+        /// Ten times a second while files are being read: progress bars, ETA, status bar counts, and selecting the
+        /// file being read. Per-file UI updates are batched here so many small files don't make the run UI-bound.
+        /// </summary>
+        private Timer CreateProgressTimer(VerifyContext context, DateTime start, Func<ChecksumFile> currentFile)
+        {
+            ChecksumFile shownFile = null;
+            Timer timer = new Timer { Interval = 100 };
+            timer.Tick += (sender, e) =>
             {
-                listItem.StateImageIndex = (int)file.State;
+                FlushStatusBar();
 
-                if (Program.Settings.General.HideGoodFiles && file.State == ChecksumFileState.OK)
-                    lvwFiles.Items.Remove(listItem);
+                if (_pause)
+                    return;
+
+                UpdateProgressText(context.BytesProcessed, start);
+
+                ChecksumFile file = currentFile();
+                if (file != null && file != shownFile)
+                {
+                    shownFile = file;
+                    SelectFile(file);
+                }
+
+                double? fileProgress = file == null ? null : context.GetFileProgress(file);
+                progressBar1.Value = fileProgress == null ? 0 : (int)(fileProgress.Value * 100);
+            };
+            return timer;
+        }
+
+        private void FlushStatusBar()
+        {
+            if (_rowsDirty)
+            {
+                _rowsDirty = false;
+                RebuildRows();
             }
+
+            if (!_statusBarDirty)
+                return;
+            _statusBarDirty = false;
+            UpdateStatusBar();
+        }
+
+        // The file list is a virtual ListView over _rows. Inserting thousands of real ListViewItems took seconds (far
+        // longer when accessibility / UI Automation clients are listening, as on many machines); a virtual list only
+        // builds the rows on screen. Virtual lists can't have groups, so each set gets a header row instead.
+        private sealed class FileRow
+        {
+            public ChecksumSet Set;
+            public ChecksumFile File; // null for the set's header row
+        }
+
+        private readonly List<FileRow> _rows = new List<FileRow>();
+        private readonly Dictionary<ChecksumFile, int> _rowIndex = new Dictionary<ChecksumFile, int>();
+        private bool _rowsDirty;
+        private int _fileNameColumnWidth;
+        private Font _headerFont;
+
+        /// <summary>Appends a header row and the set's file rows (good files left out when Hide Good is on).</summary>
+        private void AddSetRows(ChecksumSet set)
+        {
+            AppendSetRows(set);
+            ShowRows();
+        }
+
+        private void AppendSetRows(ChecksumSet set)
+        {
+            _rows.Add(new FileRow { Set = set });
+            MeasureFileName(Path.GetFileName(set.VerificationFileName), true);
+
+            bool hideGood = Program.Settings.General.HideGoodFiles;
+            foreach (ChecksumFile file in set.Files)
+            {
+                if (hideGood && file.State == ChecksumFileState.OK)
+                    continue;
+
+                _rowIndex[file] = _rows.Count;
+                _rows.Add(new FileRow { Set = set, File = file });
+                MeasureFileName(file.FileName, false);
+            }
+        }
+
+        /// <summary>Rebuilds the rows for every set shown or queued (after Hide Good changes).</summary>
+        private void RebuildRows()
+        {
+            // sets already shown, in order, plus any queued sets not shown yet
+            List<ChecksumSet> sets = new List<ChecksumSet>();
+            foreach (FileRow row in _rows)
+            {
+                if (row.File == null)
+                    sets.Add(row.Set);
+            }
+            foreach (ChecksumSet set in _sets)
+            {
+                if (!sets.Contains(set))
+                    sets.Add(set);
+            }
+
+            _rows.Clear();
+            _rowIndex.Clear();
+            foreach (ChecksumSet set in sets)
+                AppendSetRows(set);
+            ShowRows();
+        }
+
+        private void ClearFileItems()
+        {
+            _rows.Clear();
+            _rowIndex.Clear();
+            _fileNameColumnWidth = 0;
+            ShowRows();
+        }
+
+        private void ShowRows()
+        {
+            lvwFiles.VirtualListSize = _rows.Count;
+            lvwFiles.Invalidate();
+            if (_rows.Count != 0 && lvwFiles.Columns[0].Width != _fileNameColumnWidth)
+                lvwFiles.Columns[0].Width = _fileNameColumnWidth;
+        }
+
+        private void MeasureFileName(string text, bool header)
+        {
+            if (_headerFont == null)
+                _headerFont = new Font(lvwFiles.Font, FontStyle.Bold);
+
+            // room for the state icon and some padding
+            int width = TextRenderer.MeasureText(text, header ? _headerFont : lvwFiles.Font).Width + 32;
+            if (width > _fileNameColumnWidth)
+                _fileNameColumnWidth = width;
+        }
+
+        private int GetFileRow(ChecksumFile file)
+        {
+            int index;
+            return _rowIndex.TryGetValue(file, out index) ? index : -1;
+        }
+
+        private void RedrawFile(ChecksumFile file)
+        {
+            int index = GetFileRow(file);
+            if (index >= 0 && index < lvwFiles.VirtualListSize)
+                lvwFiles.RedrawItems(index, index, true);
+        }
+
+        private void SelectFile(ChecksumFile file)
+        {
+            int index = GetFileRow(file);
+            if (index < 0 || index >= lvwFiles.VirtualListSize)
+                return;
+
+            lvwFiles.SelectedIndices.Clear();
+            lvwFiles.SelectedIndices.Add(index);
+            if (Program.Settings.General.AutoScrollFileList)
+                lvwFiles.EnsureVisible(index);
+        }
+
+        /// <summary>Selected files (header rows aren't files).</summary>
+        private List<ChecksumFile> GetSelectedFiles()
+        {
+            List<ChecksumFile> files = new List<ChecksumFile>();
+            foreach (int index in lvwFiles.SelectedIndices)
+            {
+                if (index < _rows.Count && _rows[index].File != null)
+                    files.Add(_rows[index].File);
+            }
+            return files;
+        }
+
+        private void lvwFiles_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
+        {
+            FileRow row = e.ItemIndex < _rows.Count ? _rows[e.ItemIndex] : null;
+            if (row == null)
+            {
+                e.Item = new ListViewItem(new[] { string.Empty, string.Empty });
+                return;
+            }
+
+            if (row.File == null)
+            {
+                ListViewItem header = new ListViewItem(new[] { Path.GetFileName(row.Set.VerificationFileName), string.Empty }, -1);
+                header.ForeColor = Application.IsDarkModeEnabled ? Color.FromArgb(0x99, 0xC8, 0xFF) : SystemColors.HotTrack;
+                header.Font = _headerFont;
+                e.Item = header;
+                return;
+            }
+
+            ListViewItem item = new ListViewItem(new[] { row.File.FileName, string.Empty }, (int)row.File.State);
+            item.ToolTipText = row.File.ErrorMessage ?? string.Empty;
+            item.Tag = row.File;
+            e.Item = item;
         }
 
         private void StopWork()
@@ -1254,7 +1443,7 @@ export results to text file
 
         private void UpdateProgressText(long bytesProcessed, DateTime start)
         {
-            int filesLeft = _files_parts - _files_ok - _files_bad - _files_missing;
+            int filesLeft = _files_parts - _files_ok - _files_bad - _files_missing - _files_unreadable;
             decimal totalPercent = _totalSizeOfSets == 0 ? 100.0m : (bytesProcessed * 100.0m) / _totalSizeOfSets;
             if (totalPercent > 100)
                 totalPercent = 100;
@@ -1288,110 +1477,26 @@ export results to text file
             lvwFiles.MultiSelect = enabled;
         }
 
-        private string GetChecksumWithProgress(ChecksumAlgorithm algorithm, FileInfo fileInfo, long speed, long absoluteBytesProcessed, DateTime absoluteStart)
+        private static Bitmap MakeUnreadableIcon(Image source)
         {
-            FileInfoSpeed fis = new FileInfoSpeed { FileInfo = fileInfo, Algorithm = algorithm };
-
-            Thread t = new Thread(ComputeWithProgress);
-            t.IsBackground = true;
-            t.Priority = Thread.CurrentThread.Priority;
-            t.Start(fis);
-
-            long length = fileInfo.Length;
-            DateTime start = DateTime.Now;
-            while (!fis.IsDone)
+            // R' = 0.3R + 0.9B, G' = 0.5G, B' = B turns the blue bullet purple
+            ColorMatrix purple = new ColorMatrix(new[]
             {
-                if (_queueStop)
-                {
-                    // Thread.Abort is unsupported on .NET Core; closing the stream ends the worker's read loop instead
-                    fis.Cancel();
+                new float[] { 0.3f, 0, 0, 0, 0 },
+                new float[] { 0, 0.5f, 0, 0, 0 },
+                new float[] { 0.9f, 0, 1, 0, 0 },
+                new float[] { 0, 0, 0, 1, 0 },
+                new float[] { 0, 0, 0, 0, 1 }
+            });
 
-                    return null;
-                }
-
-                if (length != 0)
-                {
-                    TimeSpan dur = DateTime.Now - start;
-                    if (dur.TotalSeconds > 0.1)
-                    {
-                        if (speed == 0)
-                        {
-                            TimeSpan speedSpan = DateTime.Now - absoluteStart;
-                            if ((long)speedSpan.TotalSeconds > 0)
-                                speed = absoluteBytesProcessed / (long)speedSpan.TotalSeconds;
-                        }
-
-                        long done = (long)(speed * dur.TotalSeconds);
-                        int percent = (int)(done * 100 / length);
-                        if (percent > 0)
-                        {
-                            if (percent > 100)
-                                percent = 100;
-
-                            if (!_pause)
-                                progressBar1.Value = percent;
-                        }
-                    }
-                }
-                Application.DoEvents();
-                Thread.Sleep(10);
-            }
-
-            if (fis.Exception != null)
-                throw fis.Exception;
-
-            return fis.Checksum;
-        }
-
-        private static void ComputeWithProgress(object obj)
-        {
-            FileInfoSpeed fis = (FileInfoSpeed)obj;
-            try
+            Bitmap result = new Bitmap(source.Width, source.Height);
+            using (Graphics g = Graphics.FromImage(result))
+            using (ImageAttributes attributes = new ImageAttributes())
             {
-                using (FileStream stream = fis.OpenStream())
-                    fis.Checksum = fis.Algorithm.Compute(stream);
+                attributes.SetColorMatrix(purple);
+                g.DrawImage(source, new Rectangle(0, 0, source.Width, source.Height), 0, 0, source.Width, source.Height, GraphicsUnit.Pixel, attributes);
             }
-            catch (Exception ex)
-            {
-                fis.Exception = ex;
-            }
-
-            fis.IsDone = true;
-        }
-
-        private class FileInfoSpeed
-        {
-            public FileInfo FileInfo { get; set; }
-            public ChecksumAlgorithm Algorithm { get; set; }
-            public string Checksum { get; set; }
-            public Exception Exception { get; set; }
-            public bool IsDone { get; set; }
-
-            private readonly object _lock = new object();
-            private FileStream _stream;
-            private bool _cancelled;
-
-            public FileStream OpenStream()
-            {
-                lock (_lock)
-                {
-                    if (_cancelled)
-                        throw new OperationCanceledException();
-
-                    _stream = FileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
-                    return _stream;
-                }
-            }
-
-            public void Cancel()
-            {
-                lock (_lock)
-                {
-                    _cancelled = true;
-                    if (_stream != null)
-                        _stream.Dispose();
-                }
-            }
+            return result;
         }
 
         private void UpdateStatusBar()
@@ -1401,10 +1506,16 @@ export results to text file
                 currentSet = _sets.Count;
 
             lblSets.Text = string.Format(Language.MainForm.SetsLabel + " {0:#,0}/{1:#,0}", currentSet, _sets.Count);
-            lblParts.Text = string.Format(Language.MainForm.PartsLabel + " {0:#,0}/{1:#,0}", _files_ok + _files_missing + _files_bad, _files_parts);
+            lblParts.Text = string.Format(Language.MainForm.PartsLabel + " {0:#,0}/{1:#,0}", _files_ok + _files_missing + _files_bad + _files_unreadable, _files_parts);
             lblGood.Text = string.Format(Language.MainForm.GoodLabel + " {0:#,0}", _files_ok);
             lblMissing.Text = string.Format(Language.MainForm.MissingLabel + " {0:#,0}", _files_missing);
             lblBad.Text = string.Format(Language.MainForm.BadLabel + " {0:#,0}", _files_bad);
+            lblUnreadable.Text = string.Format(Language.MainForm.UnreadableLabel + " {0:#,0}", _files_unreadable);
+            if (lblUnreadable.Visible != (_files_unreadable != 0))
+            {
+                lblUnreadable.Visible = _files_unreadable != 0;
+                ResizeStatusBar();
+            }
         }
 
         private void miUseCachedResults_Click(object sender, EventArgs e)
@@ -1413,17 +1524,17 @@ export results to text file
             miUseCachedResults.Checked = Program.Settings.General.UseCachedResults;
         }
 
-        private void miFindRenamedFiles_Click(object sender, EventArgs e)
+        private async void miFindRenamedFiles_Click(object sender, EventArgs e)
         {
             try
             {
                 miFindRenamedFiles.Enabled = false;
 
+                VerifyContext context = new VerifyContext(CancellationToken.None);
                 int totalNewOK = 0;
-                foreach (ChecksumSet set in _sets)
+                foreach (ChecksumSet set in _sets.ToList())
                 {
-                    int newOK;
-                    FindRenamedFiles(set, out newOK);
+                    int newOK = await FindRenamedFilesAsync(set, context);
                     totalNewOK += newOK;
 
                     if (newOK != 0)
@@ -1442,114 +1553,38 @@ export results to text file
             }
         }
 
-        private void FindRenamedFiles(ChecksumSet set, out int newOK)
+        /// <summary>Looks for the set's missing files under other names (hashing in the background); returns how many were found.</summary>
+        private async Task<int> FindRenamedFilesAsync(ChecksumSet set, VerifyContext context)
         {
             Guard.ArgumentNotNull(set, "set");
 
             SetStatusText(string.Format(Language.MainForm.Status_FindingRenamesInFile, set.VerificationFileName));
-            Application.DoEvents();
 
-            newOK = 0;
-
-            Dictionary<string, string> outOfSetFiles = new Dictionary<string, string>();
-
-            const long bytesProcessed = 0;
-            DateTime start = DateTime.Now;
-
-            long speed = 0;
-            foreach (ChecksumFile file in set.Files)
+            bool lowercase = Program.Settings.Check.Renaming == CheckRenaming.Lowercase;
+            List<ChecksumFile> found;
+            try
             {
-                if (file.State == ChecksumFileState.Missing)
-                {
-                    string fullFileName = Path.Combine(set.Directory, file.FileName);
-                    string directory = Path.GetDirectoryName(fullFileName);
-                    string lookForExt = Path.GetExtension(fullFileName);
-                    //string searchPattern = "*" + Path.GetExtension(fullFileName);
-
-                    if (!Directory.Exists(directory))
-                        continue;
-
-                    string[] files = Directory.GetFiles(directory, "*.*", SearchOption.TopDirectoryOnly);
-                    foreach (string foundFile in files)
-                    {
-                        string foundFileExt = Path.GetExtension(foundFile);
-                        if (string.Compare(lookForExt, foundFileExt, true) != 0) // extensions don't match
-                        {
-                            if (!string.IsNullOrEmpty(foundFileExt) && foundFileExt != ".") // and foundFile is not "no extension"
-                                continue;
-                        }
-
-                        // if the physical file was in our set, don't check it again
-                        bool alreadyChecked = false;
-                        foreach (ChecksumFile checkedFile in set.Files)
-                        {
-                            string checkedFullFileName = Path.Combine(set.Directory, checkedFile.FileName);
-                            if (string.Compare(checkedFullFileName, foundFile, true) == 0)
-                            {
-                                alreadyChecked = true;
-                                break;
-                            }
-                        }
-
-                        if (!alreadyChecked)
-                        {
-                            // check outOfSetFiles
-                            string tmpChecksum;
-                            if (!outOfSetFiles.TryGetValue(foundFile, out tmpChecksum))
-                            {
-                                FileInfo fileInfo = TryGetNewFileInfo(foundFile);
-
-                                DateTime speedStart = DateTime.Now;
-
-                                file.CurrentChecksum = GetChecksumWithProgress(ChecksumAlgorithm.Get(set.Type), fileInfo, speed, bytesProcessed, start);
-                                if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                    continue;
-
-                                TimeSpan speedSpan = DateTime.Now - speedStart;
-                                if (fileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                    speed = fileInfo.Length / (long)speedSpan.TotalSeconds;
-                                
-
-                                outOfSetFiles.Add(foundFile, file.CurrentChecksum);
-                            }
-                            else
-                            {
-                                file.CurrentChecksum = tmpChecksum;
-                            }
-
-                            if (string.Compare(file.CurrentChecksum, file.OriginalChecksum, true) == 0)
-                            {
-                                if (Program.Settings.Check.Renaming == CheckRenaming.Lowercase)
-                                    fullFileName = fullFileName.ToLower();
-
-                                try
-                                {
-                                    File.Move(foundFile, fullFileName);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Trace.WriteLine(ex); // TODO, write exception to results tab or prompt user
-                                }
-
-                                file.State = ChecksumFileState.OK;
-                                _files_ok++;
-                                _files_missing--;
-
-                                newOK++;
-
-                                UpdateStatusBar();
-
-                                break;
-                            }
-                        }
-                    }
-                }
+                found = await Task.Run(() => RenamedFileFinder.Find(set, lowercase, context));
+            }
+            catch (OperationCanceledException)
+            {
+                return 0;
             }
 
-            if (newOK != 0)
+            foreach (ChecksumFile file in found)
             {
+                _files_ok++;
+                _files_missing--;
+
+                RedrawFile(file);
+            }
+
+            UpdateStatusBar();
+
+            if (found.Count != 0)
                 ApplyHideGood();
-            }
+
+            return found.Count;
         }
 
         private bool GetCreateSet(string ext, List<string> files)
@@ -1661,11 +1696,26 @@ export results to text file
             CreateSet();
         }
 
-        private void CreateSet()
+        private async void CreateSet()
+        {
+            await CreateSetAsync();
+        }
+
+        /// <summary>
+        /// Hashes the files of every queued set (on the thread pool, several at once on SSDs) and writes each set's
+        /// checksum file when all of its files were read.
+        /// </summary>
+        private async Task CreateSetAsync()
         {
             DateTime start = DateTime.Now;
-            long bytesProcessed = 0;
             _workingOnList = true;
+            _verifyCancel = new CancellationTokenSource();
+            _pauseGate.Resume();
+            VerifyContext context = new VerifyContext(_verifyCancel.Token, _pauseGate);
+
+            _currentRunFile = null;
+            Timer progressTimer = CreateProgressTimer(context, start, () => _currentRunFile);
+
             try
             {
                 SetStatusText(Language.MainForm.Status_Working);
@@ -1685,6 +1735,7 @@ export results to text file
                 _files_ok = 0;
                 _files_bad = 0;
                 _files_missing = 0;
+                _files_unreadable = 0;
                 _totalSizeOfSets = 0;
                 foreach (ChecksumSet set in _sets)
                 {
@@ -1693,120 +1744,47 @@ export results to text file
                 }
                 UpdateStatusBar();
 
-                ListViewBeginUpdate();
-                try
-                {
-                    lvwFiles.Items.Clear();
-                    lvwFiles.Groups.Clear();
-
-                    foreach (ChecksumSet set in _sets)
-                    {
-                        ListViewGroup group = new ListViewGroup(lvwFiles.Groups.Count.ToString(), Path.GetFileName(set.VerificationFileName));
-                        lvwFiles.Groups.Add(group);
-
-                        foreach (ChecksumFile file in set.Files)
-                        {
-                            ListViewItem item = new ListViewItem(new[] { file.FileName, file.Guid });
-                            item.Tag = file;
-                            item.StateImageIndex = 0;
-                            item.Group = group;
-                            lvwFiles.Items.Add(item);
-                        }
-                    }
-                }
-                finally
-                {
-                    ListViewEndUpdate();
-                }
+                ClearFileItems();
+                foreach (ChecksumSet set in _sets)
+                    AppendSetRows(set);
+                ShowRows();
 
                 txtComments.Text = string.Empty;
-                if (lvwFiles.Items.Count != 0)
-                    lvwFiles.AutoResizeColumn(0, ColumnHeaderAutoResizeStyle.ColumnContent);
 
                 lvwFiles.Focus();
                 Application.DoEvents();
+
+                progressTimer.Start();
 
                 for (_set_index = 0; _set_index < _sets.Count; _set_index++)
                 {
                     ChecksumSet set = _sets[_set_index];
                     Program.Settings.AddRecentFile(set.VerificationFileName);
-
-                    long speed = 0;
+                    ChecksumAlgorithm setAlgorithm = ChecksumAlgorithm.Get(set.Type);
 
                     int setOKCount = 0;
-                    for (int i = 0; i < set.Files.Count; i++)
-                    {
-                        if (_queueHideGood)
-                            ApplyHideGood();
-
-                        if (_pause)
+                    await ProcessFilesAsync(set, DiskInfo.GetParallelism(set.Directory), context.Cancel,
+                        file =>
                         {
-                            while (_pause && !_queueStop)
+                            if (!File.Exists(file.FileInfo.FullName))
                             {
-                                if (_queueHideGood)
-                                    ApplyHideGood();
-
-                                Thread.Sleep(50);
-                                Application.DoEvents();
+                                file.State = ChecksumFileState.Missing;
+                                return;
                             }
 
-                            if (_pause)
-                                Unpause();
-
-                            int pauseTotalPercent = _totalSizeOfSets == 0 ? 100 : (int)((bytesProcessed * 100) / _totalSizeOfSets);
-                            SetStatusText(string.Format(Language.MainForm.Status_WorkingPercentage, pauseTotalPercent));
-                            Application.DoEvents();
-                        }
-
-                        if (_queueStop)
-                            break;
-
-                        ChecksumFile file = set.Files[i];
-                        ListViewItem listItem = lvwFiles.FindItemWithText(file.Guid);
-
-                        progressBar1.Value = 0;
-                        listItem.Selected = true;
-                        if (Program.Settings.General.AutoScrollFileList)
-                            listItem.EnsureVisible();
-
-                        if (!File.Exists(file.FileInfo.FullName))
-                        {
-                            file.State = ChecksumFileState.Missing;
-                            _files_missing++;
-                            _queueStop = true;
-                        }
-                        else
-                        {
-                            DateTime speedStart = DateTime.Now;
-
-                            file.CurrentChecksum = GetChecksumWithProgress(ChecksumAlgorithm.Get(set.Type), file.FileInfo, speed, bytesProcessed, start);
-                            if (string.IsNullOrEmpty(file.CurrentChecksum))
-                                continue;
-
-                            TimeSpan speedSpan = DateTime.Now - speedStart;
-                            if (file.FileInfo.Length > 1024 * 1024 && (long)speedSpan.TotalSeconds > 0)
-                                speed = file.FileInfo.Length / (long)speedSpan.TotalSeconds;
-
+                            file.CurrentChecksum = FileVerifier.HashFile(setAlgorithm, file, context);
                             file.OriginalChecksum = file.CurrentChecksum;
                             file.State = ChecksumFileState.OK;
-                            _files_ok++;
-                            setOKCount++;
-                        }
+                        },
+                        file =>
+                        {
+                            if (file.State == ChecksumFileState.OK)
+                                setOKCount++;
+                            else if (file.State == ChecksumFileState.Missing)
+                                StopWork(); // as before: a file disappeared while creating, so stop
 
-                        // update status bar, listview, progressbar
-                        UpdateStatusBar();
-
-                        listItem.StateImageIndex = (int)file.State;
-
-                        bytesProcessed += file.FileInfo.Length;
-
-                        UpdateProgressBarsAndText(bytesProcessed, start);
-
-                        if (Program.Settings.General.HideGoodFiles && file.State == ChecksumFileState.OK)
-                            lvwFiles.Items.Remove(listItem);
-
-                        Application.DoEvents();
-                    }
+                            ApplyFileResult(file);
+                        });
 
                     progressBar1.Value = 100;
                     progressBar2.Value = 100;
@@ -1814,6 +1792,7 @@ export results to text file
                     if (_queueHideGood)
                         ApplyHideGood();
 
+                    // a set with a missing or unreadable file isn't written: its checksum file would be incomplete
                     if (set.Files.Count == setOKCount)
                     {
                         StringBuilder shabang = new StringBuilder();
@@ -1865,11 +1844,16 @@ export results to text file
                         txtComments.Text = strShaBang.Replace("\r\n", "\n").Replace("\n", "\r\n");
                         set.Comments = strShaBang;
                     }
+
+                    if (_queueStop)
+                        break;
                 }
 
+                progressTimer.Stop();
+
                 TimeSpan timeSpent = DateTime.Now - start;
-                Program.Settings.Statistics.AddStats(_files_parts, _set_index, bytesProcessed / 1024 / 1024, _files_ok, timeSpent);
-                Cache.Clean();
+                Program.Settings.Statistics.AddStats(_files_parts, _set_index, context.BytesProcessed / 1024 / 1024, _files_ok, timeSpent);
+                await Task.Run(() => Cache.Clean());
 
                 if (Program.Settings.Create.AutoCloseWhenDoneCreating)
                 {
@@ -1881,6 +1865,12 @@ export results to text file
             }
             finally
             {
+                progressTimer.Stop();
+                progressTimer.Dispose();
+                if (!IsDisposed)
+                    FlushStatusBar();
+
+                long bytesProcessed = context.BytesProcessed;
                 TimeSpan totalTime = DateTime.Now - start;
                 decimal totalMB = bytesProcessed / 1024.0m / 1024.0m;
                 int percentGood = _files_parts == 0 ? 0 : (_files_ok * 100) / _files_parts;
@@ -1892,18 +1882,25 @@ export results to text file
                 else
                     statusText = string.Format(Language.MainForm.Status_Finished10MinutesOrMore, percentGood, totalMB, totalTime.Hours, totalTime.Minutes, totalTime.Seconds, mbPerSecond);
 
-                notifyIcon1.ShowBalloonTip(3000, "TaoSFV", Language.MainForm.SystemTray_DoneCreating, ToolTipIcon.Info);
+                if (!IsDisposed)
+                {
+                    notifyIcon1.ShowBalloonTip(3000, "TaoSFV", Language.MainForm.SystemTray_DoneCreating, ToolTipIcon.Info);
 
-                btnPause.Enabled = false;
-                btnHide.Enabled = false;
-                SetStatusText(statusText);
-                //PlayCompleteSound(allOK);
+                    if (_pause)
+                        Unpause();
+                    btnPause.Enabled = false;
+                    btnHide.Enabled = false;
+                    SetStatusText(statusText);
 
-                ToggleMenuItemsEnabled(true, false);
+                    ToggleMenuItemsEnabled(true, false);
+
+                    btnGo.Text = Language.MainForm.GoButton;
+                }
 
                 _workingOnList = false;
-                btnGo.Text = Language.MainForm.GoButton;
                 _queueStop = false;
+                _verifyCancel.Dispose();
+                _verifyCancel = null;
             }
         }
 
@@ -2052,7 +2049,7 @@ export results to text file
                     ListViewBeginUpdate();
                     try
                     {
-                        lvwFiles.Items.Clear();
+                        ClearFileItems();
 
                         _totalSizeOfSets = 0;
                         _files_parts = 0;
@@ -2079,6 +2076,8 @@ export results to text file
                         _files_ok = 0;
                         _files_bad = 0;
                         _files_missing = 0;
+                        _files_unreadable = 0;
+                _files_unreadable = 0;
 
                         UpdateStatusBar();
                     }
@@ -2184,10 +2183,10 @@ export results to text file
         {
             Cursor.Current = Cursors.WaitCursor;
             StringBuilder sb = new StringBuilder();
-            foreach (ListViewItem item in lvwFiles.SelectedItems)
+            List<ChecksumFile> files = GetSelectedFiles();
+            foreach (ChecksumFile file in files)
             {
-                ChecksumFile file = (ChecksumFile)item.Tag;
-                if (lvwFiles.SelectedItems.Count == 1)
+                if (files.Count == 1)
                     sb.Append(Path.GetFileName(file.FileName));
                 else
                     sb.AppendLine(Path.GetFileName(file.FileName));
@@ -2200,10 +2199,10 @@ export results to text file
         {
             Cursor.Current = Cursors.WaitCursor;
             StringBuilder sb = new StringBuilder();
-            foreach (ListViewItem item in lvwFiles.SelectedItems)
+            List<ChecksumFile> files = GetSelectedFiles();
+            foreach (ChecksumFile file in files)
             {
-                ChecksumFile file = (ChecksumFile)item.Tag;
-                if (lvwFiles.SelectedItems.Count == 1)
+                if (files.Count == 1)
                     sb.Append(Path.Combine(file.Set.Directory, file.FileName));
                 else
                     sb.AppendLine(Path.Combine(file.Set.Directory, file.FileName));
@@ -2216,10 +2215,10 @@ export results to text file
         {
             Cursor.Current = Cursors.WaitCursor;
             StringBuilder sb = new StringBuilder();
-            foreach (ListViewItem item in lvwFiles.SelectedItems)
+            List<ChecksumFile> files = GetSelectedFiles();
+            foreach (ChecksumFile file in files)
             {
-                ChecksumFile file = (ChecksumFile)item.Tag;
-                if (lvwFiles.SelectedItems.Count == 1)
+                if (files.Count == 1)
                     sb.Append(file.CurrentChecksum);
                 else
                     sb.AppendLine(file.CurrentChecksum);
@@ -2232,10 +2231,10 @@ export results to text file
         {
             Cursor.Current = Cursors.WaitCursor;
             StringBuilder sb = new StringBuilder();
-            foreach (ListViewItem item in lvwFiles.SelectedItems)
+            List<ChecksumFile> files = GetSelectedFiles();
+            foreach (ChecksumFile file in files)
             {
-                ChecksumFile file = (ChecksumFile)item.Tag;
-                if (lvwFiles.SelectedItems.Count == 1)
+                if (files.Count == 1)
                     sb.Append(file.OriginalChecksum);
                 else
                     sb.AppendLine(file.OriginalChecksum);
@@ -2246,7 +2245,8 @@ export results to text file
 
         private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
         {
-            if (_workingOnList || lvwFiles.SelectedItems.Count == 0)
+            List<ChecksumFile> selected = GetSelectedFiles();
+            if (_workingOnList || selected.Count == 0)
             {
                 e.Cancel = true;
                 return;
@@ -2256,10 +2256,9 @@ export results to text file
             miCopyOriginalChecksum.Visible = false;
 
             bool showSep = false;
-            if (lvwFiles.SelectedItems.Count == 1)
+            if (selected.Count == 1)
             {
-                ListViewItem item = lvwFiles.SelectedItems[0];
-                ChecksumFile file = (ChecksumFile)item.Tag;
+                ChecksumFile file = selected[0];
 
                 if (!string.IsNullOrEmpty(file.CurrentChecksum))
                 {
@@ -2284,9 +2283,10 @@ export results to text file
             if (_workingOnList)
                 return;
 
-            if (lvwFiles.SelectedItems.Count == 1)
+            // a single file or set header shows its set's comments
+            if (lvwFiles.SelectedIndices.Count == 1 && lvwFiles.SelectedIndices[0] < _rows.Count)
             {
-                txtComments.Text = ((ChecksumFile)lvwFiles.SelectedItems[0].Tag).Set.Comments;
+                txtComments.Text = _rows[lvwFiles.SelectedIndices[0]].Set.Comments;
             }
             else
             {
@@ -2361,7 +2361,7 @@ export results to text file
                     lvwFiles.BeginUpdate();
                     try
                     {
-                        lvwFiles.Items.Clear();
+                        ClearFileItems();
                     }
                     finally
                     {
@@ -2385,7 +2385,7 @@ export results to text file
             lvwFiles.BeginUpdate();
             try
             {
-                lvwFiles.Items.Clear();
+                ClearFileItems();
             }
             finally
             {
@@ -2469,6 +2469,7 @@ export results to text file
             miFileOK.Text = p.Menu_Legend_FileOK;
             miFileBad.Text = p.Menu_Legend_FileBad;
             miFileNotFound.Text = p.Menu_Legend_FileNotFound;
+            miFileUnreadable.Text = p.Menu_Legend_FileUnreadable;
             miFileUntested.Text = p.Menu_Legend_FileUntestedUnknown;
 
             // Tools
