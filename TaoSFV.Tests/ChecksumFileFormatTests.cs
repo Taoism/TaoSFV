@@ -185,6 +185,45 @@ namespace TaoSFV.Tests
 			Assert.Equal(digest, checksum);
 		}
 
+		// --- junk in real-world files
+
+		[Fact]
+		public void Loader_IgnoresNulPadding()
+		{
+			// the exact bytes of an SFV from the wild: two good lines, then six NUL bytes
+			string path = Path.Combine(_dir, "padded.sfv");
+			byte[] text = Encoding.ASCII.GetBytes("; THIS PACK PASSED THROUGH METALWORLDS SITE\r\n01-nine_inch_nails_the_line_begins_to_blur-xmr.mp3 b00f4d20\r\n");
+			byte[] bytes = new byte[text.Length + 6];
+			text.CopyTo(bytes, 0);
+			File.WriteAllBytes(path, bytes);
+
+			ChecksumSet set = ChecksumSetLoader.Parse(path);
+
+			Assert.Single(set.Files);
+			Assert.Equal("01-nine_inch_nails_the_line_begins_to_blur-xmr.mp3", set.Files[0].FileName);
+			Assert.Equal("b00f4d20", set.Files[0].OriginalChecksum);
+		}
+
+		[Fact]
+		public void Loader_IgnoresCtrlZAndNulAroundLines()
+		{
+			string path = Path.Combine(_dir, "dos.md5");
+			File.WriteAllText(path, EmptyMD5 + " *a.bin\0\0\r\n\0\0\0\r\n" + EmptyMD5 + " *b.bin\r\n\x1a");
+
+			ChecksumSet set = ChecksumSetLoader.Parse(path);
+
+			Assert.Equal(new[] { "a.bin", "b.bin" }, set.Files.ConvertAll(f => f.FileName));
+		}
+
+		[Fact]
+		public void Loader_StillRejectsRealGarbage()
+		{
+			string path = Path.Combine(_dir, "bad.sfv");
+			File.WriteAllText(path, "good.flac AF67A815\r\nthis is not a checksum line\r\n");
+
+			Assert.Throws<InvalidChecksumFileException>(() => ChecksumSetLoader.Parse(path));
+		}
+
 		// --- encodings
 
 		[Fact]

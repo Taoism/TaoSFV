@@ -117,7 +117,9 @@ Exit codes:
 			if (checksumFiles.Count == 0)
 				return ExitError;
 
+			// a checksum file that can't be parsed is reported and skipped; the rest are still checked
 			List<ChecksumSet> sets = new List<ChecksumSet>();
+			int skipped = 0;
 			foreach (string checksumFile in checksumFiles)
 			{
 				try
@@ -128,11 +130,13 @@ Exit codes:
 				}
 				catch (InvalidChecksumFileException ex)
 				{
-					return Fail("unrecognized line in " + checksumFile + Environment.NewLine + FirstLine(ex.Message));
+					Console.Error.WriteLine("taosfv-cli: skipped " + checksumFile + ": unrecognized " + FirstLine(ex.Message));
+					skipped++;
 				}
-				catch (IOException ex)
+				catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
 				{
-					return Fail("can't read " + checksumFile + ": " + ex.Message);
+					Console.Error.WriteLine("taosfv-cli: skipped " + checksumFile + ": " + ex.Message);
+					skipped++;
 				}
 			}
 
@@ -215,10 +219,14 @@ Exit codes:
 					summary += ", " + missing + " missing";
 				if (unreadable != 0)
 					summary += ", " + unreadable + " unreadable";
+				if (skipped != 0)
+					summary += string.Format(", {0} checksum file{1} skipped", skipped, skipped == 1 ? "" : "s");
 				summary += string.Format(" - {0} in {1:0.0} s", FormatBytes(context.BytesProcessed), stopwatch.Elapsed.TotalSeconds);
 				Console.WriteLine(summary);
 			}
 
+			if (skipped != 0)
+				return ExitError;
 			return bad + missing + unreadable == 0 ? ExitOk : ExitFailed;
 		}
 

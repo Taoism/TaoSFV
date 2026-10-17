@@ -12,6 +12,15 @@ namespace TaoSFV.Model.Workset
 	/// </summary>
 	public static class ChecksumSetLoader
 	{
+		// besides whitespace: NUL padding (left by some download/FTP tools) and the DOS Ctrl+Z end-of-file marker
+		private static readonly char[] JunkChars = { '\0', '\x1a' };
+
+		/// <summary>Trims whitespace, NUL and Ctrl+Z from both ends of a line.</summary>
+		public static string CleanLine(string line)
+		{
+			return line.Trim().Trim(JunkChars).Trim();
+		}
+
 		/// <summary>
 		/// Reads a checksum file. Returns null for an unsupported extension; throws
 		/// InvalidChecksumFileException for a line in no recognized format.
@@ -32,7 +41,7 @@ namespace TaoSFV.Model.Workset
 				if (line == null)
 					continue;
 
-				line = line.Trim();
+				line = CleanLine(line);
 				if (string.IsNullOrEmpty(line))
 					continue;
 

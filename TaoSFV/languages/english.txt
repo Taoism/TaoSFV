@@ -127,6 +127,8 @@ ImportIlsfv_FirstStart_Message                    = ilSFV is installed on this c
 ImportIlsfv_Confirm_Message                       = Replace TaoSFV's preferences with ilSFV's, and add ilSFV's usage statistics, recent files and checksum cache?\n\nTaoSFV's theme is kept. ilSFV itself is not changed.
 ImportIlsfv_Done_Message                          = ilSFV settings imported: preferences, usage statistics ({0:#,0} files checked), {1} recent files and {2:#,0} cached checksums.\n\nWindow size and position apply the next time TaoSFV starts.
 ImportIlsfv_Error_Message                         = ilSFV's settings couldn't be imported.\n\n{0}
+SkippedChecksumFiles_Title                        = Checksum Files Skipped
+SkippedChecksumFiles_Message                      = {0} checksum file(s) couldn't be read and were skipped. The others are checked as usual.\n\n{1}
 
 CopyFileNamesContextMenu                          = Copy File Name(s)
 CopyPathAndFileNamesContextMenu                   = Copy Path + File Name(s)

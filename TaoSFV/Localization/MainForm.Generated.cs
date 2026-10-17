@@ -263,6 +263,12 @@ namespace TaoSFV.Localization
         ///<summary>ilSFV's settings couldn't be imported.\n\n{0}</summary>
         public string ImportIlsfv_Error_Message { get; set; }
 
+        ///<summary>Checksum Files Skipped</summary>
+        public string SkippedChecksumFiles_Title { get; set; }
+
+        ///<summary>{0} checksum file(s) couldn't be read and were skipped. The others are checked as usual.\n\n{1}</summary>
+        public string SkippedChecksumFiles_Message { get; set; }
+
         ///<summary>Copy File Name(s)</summary>
         public string CopyFileNamesContextMenu { get; set; }
 

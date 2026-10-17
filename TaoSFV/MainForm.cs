@@ -772,6 +772,12 @@ export results to text file
             return fileNames.ToList();
         }
 
+        private static string FirstLine(string text)
+        {
+            int index = text.IndexOfAny(new[] { '\r', '\n' });
+            return index < 0 ? text : text.Substring(0, index);
+        }
+
         private void miVerifyFolder_Click(object sender, EventArgs e)
         {
             using (FolderBrowserDialog dialog = new FolderBrowserDialog())
@@ -810,15 +816,36 @@ export results to text file
                     }
                 }
 
+                // one unreadable checksum file shouldn't stop a folder check: skip it and say so at the end
+                List<string> skipped = new List<string>();
                 ListViewBeginUpdate();
                 try
                 {
                     foreach (string verifyFile in verifyFiles)
-                        LoadAndVerifyFile(verifyFile, doVerify, getFileInfo);
+                    {
+                        try
+                        {
+                            LoadAndVerifyFile(verifyFile, doVerify, getFileInfo);
+                        }
+                        catch (Exception ex) when (ex is InvalidChecksumFileException || ex is IOException || ex is UnauthorizedAccessException)
+                        {
+                            Trace.WriteLine(ex);
+                            skipped.Add(verifyFile + Environment.NewLine + "    " + FirstLine(ex.Message));
+                        }
+                    }
                 }
                 finally
                 {
                     ListViewEndUpdate();
+                }
+
+                if (skipped.Count != 0)
+                {
+                    string list = string.Join(Environment.NewLine, skipped.Take(10));
+                    if (skipped.Count > 10)
+                        list += Environment.NewLine + "...";
+                    MessageBox.Show(this, string.Format(Language.MainForm.SkippedChecksumFiles_Message, skipped.Count, list),
+                        Language.MainForm.SkippedChecksumFiles_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
 
                 return true;
