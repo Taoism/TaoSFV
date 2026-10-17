@@ -41,6 +41,9 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 - [ ] **Sharper text on high-DPI screens.** Windows are laid out in fixed pixels and run system-DPI-aware.
 - [ ] **Comments template after importing.** Offer to update a header that still says "ilSFV" or links to
       cdtag.com. (This machine's TaoSFV template says "Using ilSFV" because its database predates the rename.)
+- [ ] **Make the README and release notes match the About tab.** About now says "TaoSFV made in tribute to ilSFV
+      and hkSFV, Thanks Jud!", but two places still say "a tribute to ilSFV and rekSFV": the README intro
+      (`README.md`, line 7) and the TaoSFV 2.0 entry in the release notes (`TaoSFV/ReleaseNotesForm.resx`).
 - [ ] **Redesign the icon and logo.** TaoSFV still uses ilSFV's "MiniDisc Check" icon. Make a TaoSFV icon and logo
       (light and dark backgrounds, 16-256 px) and replace it everywhere it appears: `TaoSFV.exe` and `taosfv-cli.exe`
       (`ApplicationIcon`), the window and tray icons (`MainForm.resx`), the Preferences > About picture, the
