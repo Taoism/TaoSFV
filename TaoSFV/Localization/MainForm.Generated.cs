@@ -71,6 +71,9 @@ namespace TaoSFV.Localization
         ///<summary>Unregister File Types</summary>
         public string Menu_Tools_UnregisterFileTypes { get; set; }
 
+        ///<summary>Import ilSFV Settings...</summary>
+        public string Menu_Tools_ImportIlsfvSettings { get; set; }
+
         ///<summary>&View</summary>
         public string Menu_View { get; set; }
 
@@ -238,6 +241,21 @@ namespace TaoSFV.Localization
 
         ///<summary>Choose a folder. Every checksum file in it and its subfolders will be verified.</summary>
         public string VerifyFolder_Description { get; set; }
+
+        ///<summary>Import ilSFV Settings</summary>
+        public string ImportIlsfv_Title { get; set; }
+
+        ///<summary>ilSFV is installed on this computer. Bring its preferences, usage statistics, recent files and checksum cache into TaoSFV?\n\nYou can do this later from Tools > Import ilSFV Settings. ilSFV itself is not changed.</summary>
+        public string ImportIlsfv_FirstStart_Message { get; set; }
+
+        ///<summary>Replace TaoSFV's preferences with ilSFV's, and add ilSFV's usage statistics, recent files and checksum cache?\n\nTaoSFV's theme is kept. ilSFV itself is not changed.</summary>
+        public string ImportIlsfv_Confirm_Message { get; set; }
+
+        ///<summary>ilSFV settings imported: preferences, usage statistics ({0:#,0} files checked), {1} recent files and {2:#,0} cached checksums.\n\nWindow size and position apply the next time TaoSFV starts.</summary>
+        public string ImportIlsfv_Done_Message { get; set; }
+
+        ///<summary>ilSFV's settings couldn't be imported.\n\n{0}</summary>
+        public string ImportIlsfv_Error_Message { get; set; }
 
         ///<summary>Copy File Name(s)</summary>
         public string CopyFileNamesContextMenu { get; set; }

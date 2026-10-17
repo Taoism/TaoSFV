@@ -82,9 +82,23 @@ namespace TaoSFV.Model.Settings
 			}
 		}
 
+		/// <summary>True when the settings database was created by this run (first start).</summary>
+		public bool IsNew { get; private set; }
+
+		/// <summary>Re-reads everything from the database (after an import).</summary>
+		public void Reload()
+		{
+			General.Load();
+			Check.Load();
+			Create.Load();
+			Comments.Load();
+			Statistics.Load();
+			_recentFiles = null;
+		}
+
 		public ProgramSettings()
 		{
-			Database.UpgradeSettings(Program.GetOpenSettingsConnection());
+			IsNew = Database.UpgradeSettings(Program.GetOpenSettingsConnection());
 			using (SqliteConnection conn = Program.GetOpenCacheConnection())
 				Database.UpgradeCache(conn);
 		}

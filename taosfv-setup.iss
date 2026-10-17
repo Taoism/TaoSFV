@@ -28,7 +28,9 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 
 [Files]
-; build with: dotnet publish TaoSFV\TaoSFV.csproj -c Release -o publish  (requires the .NET 10 Desktop Runtime)
+; build with (requires the .NET 10 Desktop Runtime on the target machine):
+;   dotnet publish TaoSFV\TaoSFV.csproj -c Release -r win-x64 --self-contained false -o publish
+;   dotnet publish TaoSFV.Cli\TaoSFV.Cli.csproj -c Release -r win-x64 --self-contained false -o publish
 Source: ".\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs; Excludes: "*.pdb"
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 

@@ -65,6 +65,7 @@
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.miRegisterFileTypes = new System.Windows.Forms.ToolStripMenuItem();
             this.miUnregisterFileTypes = new System.Windows.Forms.ToolStripMenuItem();
+            this.miImportIlsfv = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuView = new System.Windows.Forms.ToolStripMenuItem();
             this.miHideGood = new System.Windows.Forms.ToolStripMenuItem();
             this.miCommentResultPane = new System.Windows.Forms.ToolStripMenuItem();
@@ -337,7 +338,8 @@
             this.miTruncateFileNames,
             this.toolStripSeparator6,
             this.miRegisterFileTypes,
-            this.miUnregisterFileTypes});
+            this.miUnregisterFileTypes,
+            this.miImportIlsfv});
             this.mnuTools.Name = "mnuTools";
             this.mnuTools.Size = new System.Drawing.Size(49, 20);
             this.mnuTools.Text = "&Tools";
@@ -394,6 +396,13 @@
             this.miUnregisterFileTypes.Size = new System.Drawing.Size(326, 22);
             this.miUnregisterFileTypes.Text = "Unregister File Types";
             this.miUnregisterFileTypes.Click += new System.EventHandler(this.miUnregisterFileTypes_Click);
+            //
+            // miImportIlsfv
+            //
+            this.miImportIlsfv.Name = "miImportIlsfv";
+            this.miImportIlsfv.Size = new System.Drawing.Size(326, 22);
+            this.miImportIlsfv.Text = "Import ilSFV Settings...";
+            this.miImportIlsfv.Click += new System.EventHandler(this.miImportIlsfv_Click);
             // 
             // mnuView
             // 
@@ -862,6 +871,7 @@
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
 		private System.Windows.Forms.ToolStripMenuItem miRegisterFileTypes;
 		private System.Windows.Forms.ToolStripMenuItem miUnregisterFileTypes;
+		private System.Windows.Forms.ToolStripMenuItem miImportIlsfv;
 		private System.Windows.Forms.ToolStripMenuItem miNewSHA1;
 		private System.Windows.Forms.ToolStripMenuItem miNewSHA256;
 		private System.Windows.Forms.ToolStripMenuItem miNewSHA512;

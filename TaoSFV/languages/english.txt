@@ -50,6 +50,7 @@ Menu_Tools_FindDeleteDuplicateFilesUsingChecksum  = Find/Delete Duplicate Files 
 Menu_Tools_TruncateFileNames                      = &Truncate File Names...
 Menu_Tools_RegisterFileTypes                      = Register File Types
 Menu_Tools_UnregisterFileTypes                    = Unregister File Types
+Menu_Tools_ImportIlsfvSettings                    = Import ilSFV Settings...
 
 Menu_View                                         = &View
 Menu_View_HideGood                                = &Hide Good
@@ -119,6 +120,11 @@ RegisterFileTypesError_Title                      = Register File Types
 RegisterFileTypes_Message                         = TaoSFV now opens .sfv, .md5 and .sha1 files for your account, and adds a TaoSFV menu to files and folders in Explorer.
 UnregisterFileTypes_Message                       = TaoSFV file associations and Explorer menus were removed for your account.
 VerifyFolder_Description                          = Choose a folder. Every checksum file in it and its subfolders will be verified.
+ImportIlsfv_Title                                 = Import ilSFV Settings
+ImportIlsfv_FirstStart_Message                    = ilSFV is installed on this computer. Bring its preferences, usage statistics, recent files and checksum cache into TaoSFV?\n\nYou can do this later from Tools > Import ilSFV Settings. ilSFV itself is not changed.
+ImportIlsfv_Confirm_Message                       = Replace TaoSFV's preferences with ilSFV's, and add ilSFV's usage statistics, recent files and checksum cache?\n\nTaoSFV's theme is kept. ilSFV itself is not changed.
+ImportIlsfv_Done_Message                          = ilSFV settings imported: preferences, usage statistics ({0:#,0} files checked), {1} recent files and {2:#,0} cached checksums.\n\nWindow size and position apply the next time TaoSFV starts.
+ImportIlsfv_Error_Message                         = ilSFV's settings couldn't be imported.\n\n{0}
 
 CopyFileNamesContextMenu                          = Copy File Name(s)
 CopyPathAndFileNamesContextMenu                   = Copy Path + File Name(s)

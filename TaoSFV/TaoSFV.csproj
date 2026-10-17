@@ -24,6 +24,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
     <PackageReference Include="System.IO.Hashing" Version="10.0.13" />
+    <!-- only for importing ilSFV's .sdf databases -->
+    <PackageReference Include="Microsoft.SqlServer.Compact" Version="4.0.8876.1" NoWarn="NU1701" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <!-- SQL CE's native engine; System.Data.SqlServerCe loads it from amd64\ next to itself -->
+  <ItemGroup>
+    <None Include="$(PkgMicrosoft_SqlServer_Compact)\NativeBinaries\amd64\**\*" Link="amd64\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

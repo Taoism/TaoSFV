@@ -41,8 +41,8 @@ Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (t
 
 ```
 dotnet build TaoSFV\TaoSFV.csproj -c Release
-dotnet publish TaoSFV\TaoSFV.csproj -c Release -o publish
-dotnet publish TaoSFV.Cli\TaoSFV.Cli.csproj -c Release -o publish
+dotnet publish TaoSFV\TaoSFV.csproj -c Release -r win-x64 --self-contained false -o publish
+dotnet publish TaoSFV.Cli\TaoSFV.Cli.csproj -c Release -r win-x64 --self-contained false -o publish
 dotnet test TaoSFV.Tests
 ```
 
@@ -52,7 +52,7 @@ dotnet test TaoSFV.Tests
 
 - Ported to .NET 10 WinForms (SDK-style project, system-aware high DPI).
 - Dark mode via WinForms' built-in color modes, with fixes for the group headers, status bar and tab pages.
-- Settings and the checksum cache moved from SQL Server Compact (`*.sdf`) to SQLite (`settings.db`, `cache.db` in `%LOCALAPPDATA%\TaoSFV`). Old `.sdf` settings are not migrated; defaults are used on first run.
+- Settings and the checksum cache moved from SQL Server Compact (`*.sdf`) to SQLite (`settings.db`, `cache.db` in `%LOCALAPPDATA%\TaoSFV`). Tools > Import ilSFV Settings (also offered on first start) brings over ilSFV's preferences, usage statistics, recent files and checksum cache; it reads copies, so ilSFV's own files are never changed.
 - Stopping a check no longer relies on `Thread.Abort` (unsupported on .NET); MD5/SHA-1 hashing is now thread-safe.
 - Checksum files: UTF-8 is detected (with or without a BOM, falling back to Windows-1252), and files are written as UTF-8 when a name doesn't fit Windows-1252, so non-Latin file names work.
 - md5sum/sha1sum text-mode lines (`hash  name`, the GNU default) are now read correctly; previously every file showed as missing.

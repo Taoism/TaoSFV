@@ -2156,6 +2156,15 @@ export results to text file
             MessageBox.Show(Language.MainForm.RegisterFileTypes_Message, Language.MainForm.RegisterFileTypesError_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        private void miImportIlsfv_Click(object sender, EventArgs e)
+        {
+            if (Program.OfferIlsfvImport(this, false))
+            {
+                SetAlwaysOnTop();
+                SetLanguage();
+            }
+        }
+
         private void miUnregisterFileTypes_Click(object sender, EventArgs e)
         {
             try
@@ -2470,6 +2479,8 @@ export results to text file
             miTruncateFileNames.Text = p.Menu_Tools_TruncateFileNames;
             miRegisterFileTypes.Text = p.Menu_Tools_RegisterFileTypes;
             miUnregisterFileTypes.Text = p.Menu_Tools_UnregisterFileTypes;
+            miImportIlsfv.Text = p.Menu_Tools_ImportIlsfvSettings;
+            miImportIlsfv.Visible = IlsfvImport.IsAvailable(IlsfvImport.DefaultDataPath);
 
             // View
             mnuView.Text = p.Menu_View;

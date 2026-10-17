@@ -81,11 +81,12 @@ namespace TaoSFV
 			}
 		}
 
-		public static void UpgradeSettings(SqliteConnection conn)
+		/// <summary>Returns true when the database was created (it had no schema yet).</summary>
+		public static bool UpgradeSettings(SqliteConnection conn)
 		{
 			int version = GetVersion(conn);
 			if (version >= SettingsVersion)
-				return;
+				return false;
 
 			// raw begin/commit: Microsoft.Data.Sqlite would otherwise require cmd.Transaction on every command
 			Execute(conn, "begin;");
@@ -205,6 +206,8 @@ create table RecentFile
 				Execute(conn, "rollback;");
 				throw;
 			}
+
+			return version == 0;
 		}
 
 		public static void UpgradeCache(SqliteConnection conn)

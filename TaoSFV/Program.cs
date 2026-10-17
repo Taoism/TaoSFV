@@ -145,6 +145,10 @@ namespace TaoSFV
                     Application.SetCompatibleTextRenderingDefault(false);
                     Application.SetHighDpiMode(HighDpiMode.SystemAware);
                     ApplyTheme(Settings.General.Theme);
+
+                    // first start next to an existing ilSFV: offer its settings once
+                    if (Settings.IsNew && IlsfvImport.IsAvailable(IlsfvImport.DefaultDataPath))
+                        OfferIlsfvImport(null, true);
                     Application.ThreadException += Application_ThreadException;
                     Application.Run(new MainForm(args));
                     Cache.Flush();
@@ -324,6 +328,37 @@ namespace TaoSFV
                     Application.SetColorMode(SystemColorMode.System);
                     break;
             }
+        }
+
+        /// <summary>Asks, imports ilSFV's settings and cache, reloads settings and reports. Returns true if imported.</summary>
+        public static bool OfferIlsfvImport(IWin32Window owner, bool firstStart)
+        {
+            var lang = Language.MainForm;
+            string question = firstStart ? lang.ImportIlsfv_FirstStart_Message : lang.ImportIlsfv_Confirm_Message;
+            if (MessageBox.Show(owner, question, lang.ImportIlsfv_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return false;
+
+            IlsfvImport.Result result;
+            Cursor.Current = Cursors.WaitCursor;
+            try
+            {
+                Cache.Flush();
+                result = IlsfvImport.Import(IlsfvImport.DefaultDataPath, GetOpenSettingsConnection(), GetOpenCacheConnection);
+                Settings.Reload();
+                Language.Load(Settings.General.Language);
+            }
+            catch (Exception ex)
+            {
+                Cursor.Current = Cursors.Default;
+                Trace.WriteLine(ex);
+                MessageBox.Show(owner, string.Format(lang.ImportIlsfv_Error_Message, ex.Message), lang.ImportIlsfv_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            Cursor.Current = Cursors.Default;
+            MessageBox.Show(owner, string.Format(lang.ImportIlsfv_Done_Message, result.FilesChecked, result.RecentFiles, result.CacheEntries),
+                lang.ImportIlsfv_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return true;
         }
 
         public static void OpenUrl(string url)
