@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Input;
 
-namespace ilSFVLanguage
+namespace TaoSFVLanguage
 {
     public class DelegateCommand : ICommand
     {

@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ilSFVLanguage.ViewModel
+namespace TaoSFVLanguage.ViewModel
 {
     public class MainWindowViewModel : INotifyPropertyChanged
     {
@@ -17,9 +18,23 @@ namespace ilSFVLanguage.ViewModel
 
         public MainWindowViewModel()
         {
-            _englishFilePath = @"C:\Projects\github\ilSFV\ilSFV\languages\english.txt";
-            _outputPath = @"C:\Projects\github\ilSFV\ilSFV\Localization";
+            // default to the TaoSFV project next to this tool's repository checkout
+            string projectDir = FindProjectDirectory();
+            _englishFilePath = projectDir == null ? "" : Path.Combine(projectDir, "languages", "english.txt");
+            _outputPath = projectDir == null ? "" : Path.Combine(projectDir, "Localization");
             _generateCommand = new DelegateCommand(Generate);
+        }
+
+        private static string FindProjectDirectory()
+        {
+            for (DirectoryInfo dir = new DirectoryInfo(AppContext.BaseDirectory); dir != null; dir = dir.Parent)
+            {
+                string candidate = Path.Combine(dir.FullName, "TaoSFV");
+                if (File.Exists(Path.Combine(candidate, "languages", "english.txt")))
+                    return candidate;
+            }
+
+            return null;
         }
 
         public string EnglishFilePath
@@ -87,7 +102,7 @@ namespace ilSFVLanguage.ViewModel
                     classes.Add(className);
 
                     classText = new StringBuilder();
-                    classText.AppendLine("namespace ilSFV.Localization");
+                    classText.AppendLine("namespace TaoSFV.Localization");
                     classText.AppendLine("{");
                     classText.AppendLine("    public class " + className);
                     classText.AppendLine("    {");
@@ -121,7 +136,7 @@ namespace ilSFVLanguage.ViewModel
             string path = Path.Combine(OutputPath, "Language.Generated.cs");
             StringBuilder langCS = new StringBuilder();
 
-            langCS.AppendLine("namespace ilSFV.Localization");
+            langCS.AppendLine("namespace TaoSFV.Localization");
             langCS.AppendLine("{");
             langCS.AppendLine("    public static partial class Language");
             langCS.AppendLine("    {");

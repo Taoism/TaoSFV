@@ -25,6 +25,8 @@ dotnet build TaoSFV\TaoSFV.csproj -c Release
 dotnet publish TaoSFV\TaoSFV.csproj -c Release -o publish
 ```
 
+`TaoSFVLanguage` regenerates `TaoSFV/Localization/*.Generated.cs` after adding strings to `TaoSFV/languages/english.txt`; other language files fall back to English for missing keys.
+
 ### Changes from ilSFV 1.11 (.NET Framework 3.5)
 
 - Ported to .NET 10 WinForms (SDK-style project, system-aware high DPI).

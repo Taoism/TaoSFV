@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ilSFVLanguage.Properties
+namespace TaoSFVLanguage.Properties
 {
 
 

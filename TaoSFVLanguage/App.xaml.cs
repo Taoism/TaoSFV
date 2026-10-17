@@ -1,7 +1,7 @@
 ﻿using System.Windows;
-using ilSFVLanguage.ViewModel;
+using TaoSFVLanguage.ViewModel;
 
-namespace ilSFVLanguage
+namespace TaoSFVLanguage
 {
     /// <summary>
     /// Interaction logic for App.xaml

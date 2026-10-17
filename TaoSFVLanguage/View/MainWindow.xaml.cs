@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace ilSFVLanguage
+namespace TaoSFVLanguage
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
