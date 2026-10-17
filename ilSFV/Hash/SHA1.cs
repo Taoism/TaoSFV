@@ -11,7 +11,6 @@ namespace ilSFV.Hash
 	/// </summary>
 	public static class SHA1
 	{
-		private static readonly SHA1CryptoServiceProvider _SHA1 = new SHA1CryptoServiceProvider();
 
 		/// <summary>
 		/// Returns the SHA1 digest of a specified file as a string.
@@ -79,7 +78,7 @@ namespace ilSFV.Hash
 				throw new ArgumentNullException("stream");
 
 			stream.Position = 0;
-			return _SHA1.ComputeHash(stream);
+			return System.Security.Cryptography.SHA1.HashData(stream);
 		}
 
 		/// <summary>

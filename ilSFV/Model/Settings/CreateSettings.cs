@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Data;
-using System.Data.SqlServerCe;
+using Microsoft.Data.Sqlite;
 
 namespace ilSFV.Model.Settings
 {
@@ -26,15 +26,15 @@ AutoCloseWhenDoneCreating = @AutoCloseWhenDoneCreating,
 CreateForEachSubDir = @CreateForEachSubDir
 ";
 
-			using (SqlCeCommand cmd = new SqlCeCommand(updateSql, Program.GetOpenSettingsConnection()))
+			using (SqliteCommand cmd = new SqliteCommand(updateSql, Program.GetOpenSettingsConnection()))
 			{
-				cmd.Parameters.AddWithValue("@ExcludeFilesOfType", ExcludeFilesOfType);
-				cmd.Parameters.AddWithValue("@SortFiles", SortFiles);
-				cmd.Parameters.AddWithValue("@SFV32Compatibility", SFV32Compatibility);
-				cmd.Parameters.AddWithValue("@MD5SumCompatibility", MD5SumCompatibility);
-				cmd.Parameters.AddWithValue("@PromptForFileName", PromptForFileName);
-				cmd.Parameters.AddWithValue("@AutoCloseWhenDoneCreating", AutoCloseWhenDoneCreating);
-				cmd.Parameters.AddWithValue("@CreateForEachSubDir", CreateForEachSubDir);
+				cmd.AddParameter("@ExcludeFilesOfType", ExcludeFilesOfType);
+				cmd.AddParameter("@SortFiles", SortFiles);
+				cmd.AddParameter("@SFV32Compatibility", SFV32Compatibility);
+				cmd.AddParameter("@MD5SumCompatibility", MD5SumCompatibility);
+				cmd.AddParameter("@PromptForFileName", PromptForFileName);
+				cmd.AddParameter("@AutoCloseWhenDoneCreating", AutoCloseWhenDoneCreating);
+				cmd.AddParameter("@CreateForEachSubDir", CreateForEachSubDir);
 
 				cmd.ExecuteNonQuery();
 			}

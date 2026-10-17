@@ -23,6 +23,7 @@ namespace ilSFV
 		public ExceptionForm(string message, string stackTrace, bool isTopMost, bool occuredDuringStartup)
 		{
 			InitializeComponent();
+			ThemeHelper.Apply(this);
 
 			if (isTopMost)
 			{
@@ -48,70 +49,35 @@ namespace ilSFV
 			}
 
 			txtStackTrace.Text = stackTrace;
-
-			Thread t = new Thread(SubmitErrorNoThrow);
-			t.Start();
-		}
-
-		private void SubmitErrorNoThrow()
-		{
-			try
-			{
-				SubmitError("AUTO");
-			}
-			catch
-			{
-			}
 		}
 
 		private void btnReportBug_Click(object sender, EventArgs e)
 		{
-            var lang = Language.ExceptionForm;
-
-			string email = null;
-			DialogResult res = MessageBox.Show(lang.WouldYouLikeAResponse_Message, lang.WouldYouLikeAResponse_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-			if (res == DialogResult.Yes)
-			{
-				GetInputForm.ShowForm(lang.HowCanWeContactYou_Title, lang.HowCanWeContactYou_Message, out email);
-			}
-
 			try
 			{
-				Cursor.Current = Cursors.WaitCursor;
-
-				SubmitError(email);
-
-				Cursor.Current = Cursors.Default;
-
-				MessageBox.Show(lang.SubmitBugSuccessful_Message, "", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
+				SubmitError();
 				Close();
 			}
 			catch (Exception ex)
 			{
-				Cursor.Current = Cursors.Default;
-				MessageBox.Show(ex.Message, lang.SubmitBugError_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				MessageBox.Show(ex.Message, Language.ExceptionForm.SubmitBugError_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 			}
 		}
 
 		/// <summary>
-		/// Submits the error.
+		/// Opens a prefilled GitHub issue (the original bug endpoint on cdtag.com is gone).
 		/// </summary>
-		private void SubmitError(string email)
+		private void SubmitError()
 		{
-			List<PostData> postData = new List<PostData>();
-			postData.Add(new PostData("dummy", ""));
-			postData.Add(new PostData("msg", txtErrorMessage.Text));
-			postData.Add(new PostData("stacktrace", txtStackTrace.Text));
-			postData.Add(new PostData("os", Environment.OSVersion.ToString()));
-			postData.Add(new PostData("ver", Assembly.GetExecutingAssembly().FullName));
-			postData.Add(new PostData("email", email ?? string.Empty));
-			postData.Add(new PostData("comments", ""));
+			string stackTrace = txtStackTrace.Text;
+			if (stackTrace.Length > 4000)
+				stackTrace = stackTrace.Substring(0, 4000) + Environment.NewLine + "...";
 
-			IWebProxy proxy = WebRequest.DefaultWebProxy;
-			proxy.Credentials = new NetworkCredential();
+			string body = string.Format("**Version:** {0}\n**OS:** {1}\n\n```\n{2}\n```\n",
+				Assembly.GetExecutingAssembly().GetName().Version, Environment.OSVersion, stackTrace);
 
-			Http.PostAsync("http://www.cdtag.com/ilsfvbug.php", postData, proxy);
+			Program.OpenUrl(string.Format("https://github.com/judwhite/ilSFV/issues/new?title={0}&body={1}",
+				Uri.EscapeDataString(txtErrorMessage.Text), Uri.EscapeDataString(body)));
 		}
 
 		private void ExceptionForm_Activated(object sender, EventArgs e)

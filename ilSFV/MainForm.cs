@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data.SqlServerCe;
+using Microsoft.Data.Sqlite;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -126,6 +126,7 @@ export results to text file
         public MainForm(string[] args)
         {
             InitializeComponent();
+            ThemeHelper.Apply(this);
 
             Language.Changed += delegate { SetLanguage(); };
             SetLanguage();
@@ -309,7 +310,7 @@ export results to text file
         {
             if (InvokeRequired)
             {
-                Invoke(new MethodInvoker(LoadNewSets));
+                Invoke(new System.Windows.Forms.MethodInvoker(LoadNewSets));
             }
             else
             {
@@ -390,7 +391,7 @@ export results to text file
 
                 if (res == DialogResult.Yes)
                 {
-                    Process.Start(strparts[3]);
+                    Program.OpenUrl(strparts[3]);
                 }
             }
             else
@@ -685,7 +686,7 @@ export results to text file
 
             if (!Program.Settings.General.IsRecentFilesSaved)
             {
-                using (SqlCeCommand cmd = new SqlCeCommand("delete from RecentFile", Program.GetOpenSettingsConnection()))
+                using (SqliteCommand cmd = new SqliteCommand("delete from RecentFile", Program.GetOpenSettingsConnection()))
                 {
                     cmd.ExecuteNonQuery();
                 }
@@ -1564,6 +1565,7 @@ export results to text file
             FileInfoSpeed fis = new FileInfoSpeed { FileInfo = fileInfo };
 
             Thread t = new Thread(pss);
+            t.IsBackground = true;
             t.Priority = Thread.CurrentThread.Priority;
             t.Start(fis);
 
@@ -1573,14 +1575,8 @@ export results to text file
             {
                 if (_queueStop)
                 {
-                    try
-                    {
-                        t.Abort();
-                    }
-                    catch (Exception ex)
-                    {
-                        Trace.WriteLine(ex);
-                    }
+                    // Thread.Abort is unsupported on .NET Core; closing the stream ends the worker's read loop instead
+                    fis.Cancel();
 
                     return null;
                 }
@@ -1624,7 +1620,8 @@ export results to text file
             FileInfoSpeed fis = (FileInfoSpeed)obj;
             try
             {
-                fis.Checksum = MD5.Calculate(fis.FileInfo);
+                using (FileStream stream = fis.OpenStream())
+                    fis.Checksum = MD5.Calculate(stream);
             }
             catch (Exception ex)
             {
@@ -1639,7 +1636,8 @@ export results to text file
             FileInfoSpeed fis = (FileInfoSpeed)obj;
             try
             {
-                fis.Checksum = SHA1.Calculate(fis.FileInfo);
+                using (FileStream stream = fis.OpenStream())
+                    fis.Checksum = SHA1.Calculate(stream);
             }
             catch (Exception ex)
             {
@@ -1654,7 +1652,8 @@ export results to text file
             FileInfoSpeed fis = (FileInfoSpeed)obj;
             try
             {
-                fis.Checksum = CRC32.Calculate(fis.FileInfo);
+                using (FileStream stream = fis.OpenStream())
+                    fis.Checksum = CRC32.Calculate(stream);
             }
             catch (Exception ex)
             {
@@ -1670,6 +1669,32 @@ export results to text file
             public string Checksum { get; set; }
             public Exception Exception { get; set; }
             public bool IsDone { get; set; }
+
+            private readonly object _lock = new object();
+            private FileStream _stream;
+            private bool _cancelled;
+
+            public FileStream OpenStream()
+            {
+                lock (_lock)
+                {
+                    if (_cancelled)
+                        throw new OperationCanceledException();
+
+                    _stream = FileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
+                    return _stream;
+                }
+            }
+
+            public void Cancel()
+            {
+                lock (_lock)
+                {
+                    _cancelled = true;
+                    if (_stream != null)
+                        _stream.Dispose();
+                }
+            }
         }
 
         private void UpdateStatusBar()

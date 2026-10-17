@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Data;
-using System.Data.SqlServerCe;
+using Microsoft.Data.Sqlite;
 
 namespace ilSFV.Model.Settings
 {
@@ -38,21 +38,21 @@ PlaySoundOK_IfInactive = @PlaySoundOK_IfInactive,
 PlaySoundError = @PlaySoundError
 ";
 
-			using (SqlCeCommand cmd = new SqlCeCommand(updateSql, Program.GetOpenSettingsConnection()))
+			using (SqliteCommand cmd = new SqliteCommand(updateSql, Program.GetOpenSettingsConnection()))
 			{
-				cmd.Parameters.AddWithValue("@AutoFindRenames", AutoFindRenames);
-				cmd.Parameters.AddWithValue("@AutoVerify", AutoVerify);
-				cmd.Parameters.AddWithValue("@UseRecyleBin", UseRecyleBin);
-				cmd.Parameters.AddWithValue("@RenameBadFiles", RenameBadFiles);
-				cmd.Parameters.AddWithValue("@CreateMissingMarkers", CreateMissingMarkers);
-				cmd.Parameters.AddWithValue("@CleanupBadMissing", CleanupBadMissing);
-				cmd.Parameters.AddWithValue("@DeleteFailedFiles", DeleteFailedFiles);
-				cmd.Parameters.AddWithValue("@AutoCloseWhenDoneChecking", AutoCloseWhenDoneChecking);
-				cmd.Parameters.AddWithValue("@AutoCloseWhenDoneCheckingOnlyIfAllOK", AutoCloseWhenDoneCheckingOnlyIfAllOK);
-				cmd.Parameters.AddWithValue("@Renaming", Renaming);
-				cmd.Parameters.AddWithValue("@PlaySoundOK", PlaySoundOK);
-				cmd.Parameters.AddWithValue("@PlaySoundOK_IfInactive", PlaySoundOK_OnlyIfInactive);
-				cmd.Parameters.AddWithValue("@PlaySoundError", PlaySoundError);
+				cmd.AddParameter("@AutoFindRenames", AutoFindRenames);
+				cmd.AddParameter("@AutoVerify", AutoVerify);
+				cmd.AddParameter("@UseRecyleBin", UseRecyleBin);
+				cmd.AddParameter("@RenameBadFiles", RenameBadFiles);
+				cmd.AddParameter("@CreateMissingMarkers", CreateMissingMarkers);
+				cmd.AddParameter("@CleanupBadMissing", CleanupBadMissing);
+				cmd.AddParameter("@DeleteFailedFiles", DeleteFailedFiles);
+				cmd.AddParameter("@AutoCloseWhenDoneChecking", AutoCloseWhenDoneChecking);
+				cmd.AddParameter("@AutoCloseWhenDoneCheckingOnlyIfAllOK", AutoCloseWhenDoneCheckingOnlyIfAllOK);
+				cmd.AddParameter("@Renaming", Renaming.ToString());
+				cmd.AddParameter("@PlaySoundOK", PlaySoundOK);
+				cmd.AddParameter("@PlaySoundOK_IfInactive", PlaySoundOK_OnlyIfInactive);
+				cmd.AddParameter("@PlaySoundError", PlaySoundError);
 
 				cmd.ExecuteNonQuery();
 			}

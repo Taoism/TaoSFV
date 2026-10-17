@@ -11,7 +11,6 @@ namespace ilSFV.Hash
     /// </summary>
     public static class MD5
     {
-        private static readonly MD5CryptoServiceProvider _MD5 = new MD5CryptoServiceProvider();
 
         /// <summary>
         /// Returns the MD5 digest of a specified file as a string.
@@ -79,7 +78,7 @@ namespace ilSFV.Hash
                 throw new ArgumentNullException("stream");
 
             stream.Position = 0;
-            return _MD5.ComputeHash(stream);
+            return System.Security.Cryptography.MD5.HashData(stream);
         }
 
         /// <summary>

@@ -8,6 +8,7 @@ namespace ilSFV
 		private GetInputForm()
 		{
 			InitializeComponent();
+			ThemeHelper.Apply(this);
 
             btnOK.Text = Language.General.OKButton;
             btnCancel.Text = Language.General.CancelButton;

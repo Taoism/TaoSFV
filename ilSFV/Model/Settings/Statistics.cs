@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Data;
-using System.Data.SqlServerCe;
+using Microsoft.Data.Sqlite;
 
 namespace ilSFV.Model.Settings
 {
@@ -21,7 +21,7 @@ MBChecked = 0,
 GoodFiles = 0,
 TimeSpent = 0";
 
-			using (SqlCeCommand cmd = new SqlCeCommand(updateSql, Program.GetOpenSettingsConnection()))
+			using (SqliteCommand cmd = new SqliteCommand(updateSql, Program.GetOpenSettingsConnection()))
 			{
 				cmd.ExecuteNonQuery();
 			}
@@ -49,13 +49,13 @@ MBChecked = MBChecked + @MBChecked,
 GoodFiles = GoodFiles + @GoodFiles,
 TimeSpent = TimeSpent + @TimeSpent";
 
-			using (SqlCeCommand cmd = new SqlCeCommand(updateSql, Program.GetOpenSettingsConnection()))
+			using (SqliteCommand cmd = new SqliteCommand(updateSql, Program.GetOpenSettingsConnection()))
 			{
-				cmd.Parameters.AddWithValue("@FilesChecked", filesChecked);
-				cmd.Parameters.AddWithValue("@SetsChecked", setsChecked);
-				cmd.Parameters.AddWithValue("@MBChecked", mbChecked);
-				cmd.Parameters.AddWithValue("@GoodFiles", goodFiles);
-				cmd.Parameters.AddWithValue("@TimeSpent", (long)timeSpan.TotalSeconds);
+				cmd.AddParameter("@FilesChecked", filesChecked);
+				cmd.AddParameter("@SetsChecked", setsChecked);
+				cmd.AddParameter("@MBChecked", mbChecked);
+				cmd.AddParameter("@GoodFiles", goodFiles);
+				cmd.AddParameter("@TimeSpent", (long)timeSpan.TotalSeconds);
 
 				cmd.ExecuteNonQuery();
 			}

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlServerCe;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -11,6 +10,7 @@ using System.Windows.Forms;
 using ilSFV.FileAssociation;
 using ilSFV.Localization;
 using ilSFV.Model.Settings;
+using Microsoft.Data.Sqlite;
 using Microsoft.Win32;
 
 namespace ilSFV
@@ -23,8 +23,7 @@ namespace ilSFV
 
         public static string AppDataPath { get { return _dataPath; } }
 
-        private static SqlCeConnection _cacheConn;
-        private static SqlCeConnection _settingsConn;
+        private static SqliteConnection _settingsConn;
 
         /// <summary>
         /// The main entry point for the application.
@@ -32,14 +31,15 @@ namespace ilSFV
         [STAThread]
         static void Main(string[] args)
         {
+            // checksum files are read/written with legacy code pages, which .NET only provides via this provider
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
             bool ok;
             Mutex mutex = new Mutex(true, "{BD9CC623-170A-46b5-A9A2-76CB2C9B3B2B}", out ok);
             bool anotherInstance = !ok;
 
             try
             {
-                string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
                 _dataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ilSFV");
                 if (!Directory.Exists(_dataPath))
                 {
@@ -48,15 +48,9 @@ namespace ilSFV
                     Directory.CreateDirectory(_dataPath);
                 }
 
-                _cacheFile = Path.Combine(_dataPath, "cache.sdf");
-                if (!File.Exists(_cacheFile))
-                    File.Copy(Path.Combine(appPath, "cache.sdf"), _cacheFile);
-                _settingsFile = Path.Combine(_dataPath, "settings.sdf");
-                if (!File.Exists(_settingsFile))
-                    File.Copy(Path.Combine(appPath, "settings.sdf"), _settingsFile);
-
-                _cacheConn = new SqlCeConnection(string.Format("Data Source={0};Persist Security Info=False;", _cacheFile));
-                _settingsConn = new SqlCeConnection(string.Format("Data Source={0};Persist Security Info=False;", _settingsFile));
+                // SQLite databases are created on first run; the old SQL Server Compact .sdf files are not migrated
+                _cacheFile = Path.Combine(_dataPath, "cache.db");
+                _settingsFile = Path.Combine(_dataPath, "settings.db");
 
                 Settings = new ProgramSettings();
                 Settings.General.Load();
@@ -150,6 +144,8 @@ namespace ilSFV
 
                     Application.EnableVisualStyles();
                     Application.SetCompatibleTextRenderingDefault(false);
+                    Application.SetHighDpiMode(HighDpiMode.SystemAware);
+                    ApplyTheme(Settings.General.Theme);
                     Application.ThreadException += Application_ThreadException;
                     Application.Run(new MainForm(args));
 
@@ -202,7 +198,7 @@ namespace ilSFV
                     reg.Write(string.Format(@"{0}\shell\ilSFV", id), "SubCommands", "ilsfv.sfv;ilsfv.md5;ilsfv.sha1");
                 }*/
 
-                string path = Assembly.GetExecutingAssembly().Location;
+                string path = ExecutablePath;
 
                 string body = string.Format(Properties.Resources.regfile, path);
 
@@ -304,7 +300,7 @@ namespace ilSFV
                 DialogResult res = MessageBox.Show(Language.Startup.RequireNET35_Message, Language.General.Error, MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
                 if (res == DialogResult.OK)
                 {
-                    Process.Start("http://www.microsoft.com/downloads/details.aspx?familyid=AB99342F-5D1A-413D-8319-81DA479AB0D7&displaylang=en");
+                    OpenUrl("https://dotnet.microsoft.com/download/dotnet");
                 }
 
                 Environment.Exit(-1);
@@ -327,7 +323,7 @@ namespace ilSFV
                 fai.Delete();
             fai.Create(id);
 
-            string path = Assembly.GetExecutingAssembly().Location;
+            string path = ExecutablePath;
 
             ProgramAssociationInfo pai = new ProgramAssociationInfo(fai.ProgID);
             if (pai.Exists)
@@ -345,40 +341,49 @@ namespace ilSFV
             reg.Write(string.Format(@"{0}\shell\ilSFV", id), "SubCommands", "ilsfv.verify");*/
         }
 
-        public static SqlCeConnection GetOpenCacheConnection()
+        /// <summary>
+        /// Returns a new open connection; callers dispose it. The cache is written from background threads,
+        /// and SQLite connections must not be shared across threads.
+        /// </summary>
+        public static SqliteConnection GetOpenCacheConnection()
         {
-            if (_cacheConn.State != System.Data.ConnectionState.Open)
-            {
-                try
-                {
-                    _cacheConn.Open();
-                }
-                catch (SqlCeInvalidDatabaseFormatException)
-                {
-                    SqlCeEngine engine = new SqlCeEngine(_cacheConn.ConnectionString);
-                    engine.Upgrade();
-                    _cacheConn.Open();
-                }
-            }
-            return _cacheConn;
+            return Database.Open(_cacheFile);
         }
 
-        public static SqlCeConnection GetOpenSettingsConnection()
+        public static SqliteConnection GetOpenSettingsConnection()
         {
-            if (_settingsConn.State != System.Data.ConnectionState.Open)
-            {
-                try
-                {
-                    _settingsConn.Open();
-                }
-                catch (SqlCeInvalidDatabaseFormatException)
-                {
-                    SqlCeEngine engine = new SqlCeEngine(_settingsConn.ConnectionString);
-                    engine.Upgrade();
-                    _settingsConn.Open();
-                }
-            }
+            if (_settingsConn == null)
+                _settingsConn = Database.Open(_settingsFile);
             return _settingsConn;
+        }
+
+        /// <summary>
+        /// Path of ilSFV.exe (Assembly.Location points at ilSFV.dll on .NET).
+        /// </summary>
+        public static string ExecutablePath
+        {
+            get { return Environment.ProcessPath ?? Application.ExecutablePath; }
+        }
+
+        public static void ApplyTheme(AppTheme theme)
+        {
+            switch (theme)
+            {
+                case AppTheme.Light:
+                    Application.SetColorMode(SystemColorMode.Classic);
+                    break;
+                case AppTheme.Dark:
+                    Application.SetColorMode(SystemColorMode.Dark);
+                    break;
+                default:
+                    Application.SetColorMode(SystemColorMode.System);
+                    break;
+            }
+        }
+
+        public static void OpenUrl(string url)
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
 
         public static void SafeDelete(string fileName)

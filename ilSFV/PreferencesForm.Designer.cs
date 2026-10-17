@@ -50,6 +50,8 @@
             this.lblCacheSizeLabel = new System.Windows.Forms.Label();
             this.cboLanguage = new System.Windows.Forms.ComboBox();
             this.lblLanguage = new System.Windows.Forms.Label();
+            this.lblTheme = new System.Windows.Forms.Label();
+            this.cboTheme = new System.Windows.Forms.ComboBox();
             this.tpChecking = new System.Windows.Forms.TabPage();
             this.chkPlaySoundOnError = new System.Windows.Forms.CheckBox();
             this.chkAutomaticallyVerify = new System.Windows.Forms.CheckBox();
@@ -134,6 +136,8 @@
             // 
             // tpGeneral
             // 
+            this.tpGeneral.Controls.Add(this.lblTheme);
+            this.tpGeneral.Controls.Add(this.cboTheme);
             this.tpGeneral.Controls.Add(this.chkIsRecentFilesSaved);
             this.tpGeneral.Controls.Add(this.chkUseLowPriorityOnHide);
             this.tpGeneral.Controls.Add(this.txtCheckForUpdatesDays);
@@ -267,6 +271,22 @@
             // 
             resources.ApplyResources(this.lblLanguage, "lblLanguage");
             this.lblLanguage.Name = "lblLanguage";
+            // 
+            // lblTheme
+            // 
+            this.lblTheme.AutoSize = true;
+            this.lblTheme.Location = new System.Drawing.Point(236, 207);
+            this.lblTheme.Name = "lblTheme";
+            this.lblTheme.Text = "Theme:";
+            // 
+            // cboTheme
+            // 
+            this.cboTheme.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboTheme.FormattingEnabled = true;
+            this.cboTheme.Location = new System.Drawing.Point(290, 204);
+            this.cboTheme.Name = "cboTheme";
+            this.cboTheme.Size = new System.Drawing.Size(121, 21);
+            this.cboTheme.TabIndex = 20;
             // 
             // tpChecking
             // 
@@ -716,6 +736,8 @@
         private System.Windows.Forms.GroupBox grpUsageStatistics;
         private System.Windows.Forms.ComboBox cboLanguage;
         private System.Windows.Forms.Label lblLanguage;
+        private System.Windows.Forms.Label lblTheme;
+        private System.Windows.Forms.ComboBox cboTheme;
 		private System.Windows.Forms.TrackBar trkCacheSize;
 		private System.Windows.Forms.Label lblCacheRecords;
         private System.Windows.Forms.Label lblRecords;

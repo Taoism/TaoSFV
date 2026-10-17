@@ -28,24 +28,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 
 [Files]
-Source: ".\ilSFV\bin\Debug\ilSFV.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\cache.sdf"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\settings.sdf"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\sqlceca40.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\sqlcecompact40.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\sqlceer40EN.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\sqlceme40.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\sqlceqp40.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\sqlcese40.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\complete_ok.wav"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\complete_error.wav"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\System.Data.SqlServerCe.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\languages\english.txt"; DestDir: "{app}\languages"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\languages\deutsch.txt"; DestDir: "{app}\languages"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\languages\français.txt"; DestDir: "{app}\languages"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\languages\italiano.txt"; DestDir: "{app}\languages"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\languages\chinese.txt"; DestDir: "{app}\languages"; Flags: ignoreversion
-Source: ".\ilSFV\bin\Debug\languages\russian.txt"; DestDir: "{app}\languages"; Flags: ignoreversion
+; build with: dotnet publish ilSFV\ilSFV.csproj -c Release -o publish  (requires the .NET 10 Desktop Runtime)
+Source: ".\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs; Excludes: "*.pdb"
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

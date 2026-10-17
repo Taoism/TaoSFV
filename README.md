@@ -12,6 +12,24 @@ SFV, MD5 and SHA-1 file verification utility. Check [Releases](https://github.co
 - Ability to run in the background
 - Reads BSD style checksum files and other less-known formats
 - Option to find renamed files based on checksum files
+- Dark mode (Preferences → General → Theme: System default / Light / Dark)
+
+## Building
+
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (the app itself needs the .NET 10 Desktop Runtime).
+
+```
+dotnet build ilSFV\ilSFV.csproj -c Release
+dotnet publish ilSFV\ilSFV.csproj -c Release -o publish
+```
+
+### Changes from 1.11 (.NET Framework 3.5)
+
+- Ported to .NET 10 WinForms (SDK-style project, system-aware high DPI).
+- Dark mode via WinForms' built-in color modes, with fixes for the group headers, status bar and tab pages.
+- Settings and the checksum cache moved from SQL Server Compact (`*.sdf`) to SQLite (`settings.db`, `cache.db` in `%LOCALAPPDATA%\ilSFV`). Old `.sdf` settings are not migrated; defaults are used on first run.
+- Stopping a check no longer relies on `Thread.Abort` (unsupported on .NET); MD5/SHA-1 hashing is now thread-safe.
+- Links that pointed at the defunct cdtag.com (web, update check, bug reports) now go to this GitHub repository.
 
 ## Project Status
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlServerCe;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Threading;
 using ilSFV.Model.Workset;
@@ -19,8 +19,8 @@ namespace ilSFV
 		private static void Clear(string tableName)
 		{
 			string deleteSql = string.Format("delete from {0};", tableName);
-			using (SqlCeCommand cmd = new SqlCeCommand(deleteSql, Program.GetOpenCacheConnection()))
-				cmd.ExecuteNonQuery();
+			using (SqliteConnection conn = Program.GetOpenCacheConnection())
+				Database.Execute(conn, deleteSql);
 		}
 
 		private static void Clean(string tableName)
@@ -31,28 +31,22 @@ namespace ilSFV
 			string getMaxIDSql = string.Format("select max(ID) from {0};", tableName);
 			long? maxID = null;
 
-			using (SqlCeCommand cmd = new SqlCeCommand(getMaxIDSql, Program.GetOpenCacheConnection()))
-			using (SqlCeDataAdapter da = new SqlCeDataAdapter(cmd))
+			using (SqliteConnection conn = Program.GetOpenCacheConnection())
 			{
-				DataSet ds = new DataSet();
-				da.Fill(ds);
-
-				if (ds.Tables[0].Rows.Count == 1)
+				DataTable dt = Database.GetTable(conn, getMaxIDSql);
+				if (dt.Rows.Count == 1)
 				{
-					if (!DBNull.Value.Equals(ds.Tables[0].Rows[0][0]))
-						maxID = Convert.ToInt64(ds.Tables[0].Rows[0][0]);
+					if (!DBNull.Value.Equals(dt.Rows[0][0]))
+						maxID = Convert.ToInt64(dt.Rows[0][0]);
 				}
-			}
 
-			if (maxID != null)
-			{
-				maxID -= Program.Settings.General.CacheSize;
-				if (maxID > 0)
+				if (maxID != null)
 				{
-					string deleteSql = string.Format("delete from {0} where ID <= {1};", tableName, maxID);
-					using (SqlCeCommand cmd = new SqlCeCommand(deleteSql, Program.GetOpenCacheConnection()))
+					maxID -= Program.Settings.General.CacheSize;
+					if (maxID > 0)
 					{
-						cmd.ExecuteNonQuery();
+						string deleteSql = string.Format("delete from {0} where ID <= {1};", tableName, maxID);
+						Database.Execute(conn, deleteSql);
 					}
 				}
 			}
@@ -86,11 +80,12 @@ namespace ilSFV
 				string crc32 = ((UpdateSQLData)sqlData).Checksum;
 
 				const string updateSql = "insert into CRC32FileCache (FileName, LastWriteUtc, FileLength, CRC32) values(@FileName, @LastWriteUtc, @FileLength, @CRC32);";
-				using (SqlCeCommand cmd = new SqlCeCommand(updateSql, Program.GetOpenCacheConnection()))
+				using (SqliteConnection conn = Program.GetOpenCacheConnection())
+				using (SqliteCommand cmd = new SqliteCommand(updateSql, conn))
 				{
 					cmd.Parameters.AddWithValue("@FileName", fileInfo.FullName);
 					cmd.Parameters.AddWithValue("@LastWriteUtc", fileInfo.LastWriteTimeUtc);
-					cmd.Parameters.AddWithValue("@FileLEngth", fileInfo.Length);
+					cmd.Parameters.AddWithValue("@FileLength", fileInfo.Length);
 					cmd.Parameters.AddWithValue("@CRC32", crc32);
 					cmd.ExecuteNonQuery();
 				}
@@ -108,11 +103,12 @@ namespace ilSFV
 				string md5 = ((UpdateSQLData)sqlData).Checksum;
 
 				const string updateSql = "insert into MD5FileCache (FileName, LastWriteUtc, FileLength, MD5) values(@FileName, @LastWriteUtc, @FileLength, @MD5);";
-				using (SqlCeCommand cmd = new SqlCeCommand(updateSql, Program.GetOpenCacheConnection()))
+				using (SqliteConnection conn = Program.GetOpenCacheConnection())
+				using (SqliteCommand cmd = new SqliteCommand(updateSql, conn))
 				{
 					cmd.Parameters.AddWithValue("@FileName", fileInfo.FullName);
 					cmd.Parameters.AddWithValue("@LastWriteUtc", fileInfo.LastWriteTimeUtc);
-					cmd.Parameters.AddWithValue("@FileLEngth", fileInfo.Length);
+					cmd.Parameters.AddWithValue("@FileLength", fileInfo.Length);
 					cmd.Parameters.AddWithValue("@MD5", md5);
 					cmd.ExecuteNonQuery();
 				}
@@ -130,11 +126,12 @@ namespace ilSFV
 				string sha1 = ((UpdateSQLData)sqlData).Checksum;
 
 				const string updateSql = "insert into SHA1FileCache (FileName, LastWriteUtc, FileLength, SHA1) values(@FileName, @LastWriteUtc, @FileLength, @SHA1);";
-				using (SqlCeCommand cmd = new SqlCeCommand(updateSql, Program.GetOpenCacheConnection()))
+				using (SqliteConnection conn = Program.GetOpenCacheConnection())
+				using (SqliteCommand cmd = new SqliteCommand(updateSql, conn))
 				{
 					cmd.Parameters.AddWithValue("@FileName", fileInfo.FullName);
 					cmd.Parameters.AddWithValue("@LastWriteUtc", fileInfo.LastWriteTimeUtc);
-					cmd.Parameters.AddWithValue("@FileLEngth", fileInfo.Length);
+					cmd.Parameters.AddWithValue("@FileLength", fileInfo.Length);
 					cmd.Parameters.AddWithValue("@SHA1", sha1);
 					cmd.ExecuteNonQuery();
 				}
@@ -181,29 +178,25 @@ namespace ilSFV
 
 			string getCacheSql;
 			if (checksumType == ChecksumType.MD5)
-				getCacheSql = "select FileName, LastWriteUtc, FileLength, MD5 as Checksum from MD5FileCache where FileName like @Directory + '%'";
+				getCacheSql = "select FileName, LastWriteUtc, FileLength, MD5 as Checksum from MD5FileCache where FileName like @Directory || '%'";
 			else if (checksumType == ChecksumType.SFV)
-				getCacheSql = "select FileName, LastWriteUtc, FileLength, CRC32 as Checksum from CRC32FileCache where FileName like @Directory + '%'";
+				getCacheSql = "select FileName, LastWriteUtc, FileLength, CRC32 as Checksum from CRC32FileCache where FileName like @Directory || '%'";
 			else if (checksumType == ChecksumType.SHA1)
-				getCacheSql = "select FileName, LastWriteUtc, FileLength, SHA1 as Checksum from SHA1FileCache where FileName like @Directory + '%'";
+				getCacheSql = "select FileName, LastWriteUtc, FileLength, SHA1 as Checksum from SHA1FileCache where FileName like @Directory || '%'";
 			else
 				throw new Exception(string.Format("{0} not implemented", checksumType));
 
-			DataSet ds = new DataSet();
+			DataTable dt;
 
-			using (SqlCeCommand cmd = new SqlCeCommand(getCacheSql, Program.GetOpenCacheConnection()))
-			using (SqlCeDataAdapter da = new SqlCeDataAdapter(cmd))
+			using (SqliteConnection conn = Program.GetOpenCacheConnection())
+			using (SqliteCommand cmd = new SqliteCommand(getCacheSql, conn))
 			{
-				SqlCeParameter param = new SqlCeParameter("@Directory", SqlDbType.NVarChar);
-				param.Value = baseDirectory;
-
-				cmd.Parameters.Add(param);
-
-				da.Fill(ds);
+				cmd.Parameters.AddWithValue("@Directory", baseDirectory);
+				dt = Database.GetTable(cmd);
 			}
 
 			List<ChecksumFile> files = new List<ChecksumFile>();
-			foreach (DataRow dr in ds.Tables[0].Rows)
+			foreach (DataRow dr in dt.Rows)
 			{
 				ChecksumFile file = new ChecksumFile(null);
 

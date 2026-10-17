@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Data;
-using System.Data.SqlServerCe;
+using Microsoft.Data.Sqlite;
 
 namespace ilSFV.Model.Settings
 {
@@ -20,12 +20,12 @@ Content = @Content,
 Footer = @Footer
 ";
 
-			using (SqlCeCommand cmd = new SqlCeCommand(updateSql, Program.GetOpenSettingsConnection()))
+			using (SqliteCommand cmd = new SqliteCommand(updateSql, Program.GetOpenSettingsConnection()))
 			{
-				cmd.Parameters.AddWithValue("@WriteComments", WriteComments);
-				cmd.Parameters.AddWithValue("@Header", Header);
-				cmd.Parameters.AddWithValue("@Content", Content);
-				cmd.Parameters.AddWithValue("@Footer", Footer);
+				cmd.AddParameter("@WriteComments", WriteComments);
+				cmd.AddParameter("@Header", Header);
+				cmd.AddParameter("@Content", Content);
+				cmd.AddParameter("@Footer", Footer);
 
 				cmd.ExecuteNonQuery();
 			}

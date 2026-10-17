@@ -143,6 +143,11 @@ FlashWindowWhenDone                               = Flash window when done
 AutoScrollFileList                                = Automatically scroll file list
 RecursiveCreationChecking                         = Recursive creation/checking
 UseLowPriorityOnHide                              = Use low priority on hide
+Theme                                             = Theme:
+Theme_System                                      = System default
+Theme_Light                                       = Light
+Theme_Dark                                        = Dark
+ThemeRestart_Message                              = Restart ilSFV to apply the new theme.
 CacheCleared_Message                              = Cache cleared.
 CacheCleared_Title                                = Clear Cache
 

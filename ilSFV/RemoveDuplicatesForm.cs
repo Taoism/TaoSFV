@@ -20,6 +20,7 @@ namespace ilSFV
         public RemoveDuplicatesForm(ChecksumSet set)
         {
             InitializeComponent();
+            ThemeHelper.Apply(this);
 
             _set = set;
 

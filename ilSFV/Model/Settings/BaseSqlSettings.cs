@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Data.SqlServerCe;
 
 namespace ilSFV.Model.Settings
 {
@@ -7,14 +6,7 @@ namespace ilSFV.Model.Settings
 	{
 		public DataRow GetDataRow(string tableName)
 		{
-			using (SqlCeCommand cmd = new SqlCeCommand("select * from " + tableName, Program.GetOpenSettingsConnection()))
-			using (SqlCeDataAdapter da = new SqlCeDataAdapter(cmd))
-			{
-				DataSet ds = new DataSet();
-				da.Fill(ds);
-
-				return ds.Tables[0].Rows[0];
-			}
+			return Database.GetTable(Program.GetOpenSettingsConnection(), "select * from " + tableName).Rows[0];
 		}
 	}
 }

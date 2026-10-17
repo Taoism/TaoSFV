@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Data;
-using System.Data.SqlServerCe;
+using Microsoft.Data.Sqlite;
 using System.Windows.Forms;
 
 namespace ilSFV.Model.Settings
@@ -26,6 +26,7 @@ namespace ilSFV.Model.Settings
 		public int WindowLeft { get; set; }
 		public int WindowTop { get; set; }
 		public FormWindowState FormWindowState { get; set; }
+		public AppTheme Theme { get; set; }
 
 		public bool CheckForUpdates { get; set; }
 		public DateTime? LastUpdateCheck { get; set; }
@@ -54,39 +55,41 @@ WindowLeft = @WindowLeft,
 WindowTop = @WindowTop,
 FormWindowState = @FormWindowState,
 UseLowPriorityOnHide = @UseLowPriorityOnHide,
-IsRecentFilesSaved = @IsRecentFilesSaved
+IsRecentFilesSaved = @IsRecentFilesSaved,
+Theme = @Theme
 ";
 
-			using (SqlCeCommand cmd = new SqlCeCommand(updateSql, Program.GetOpenSettingsConnection()))
+			using (SqliteCommand cmd = new SqliteCommand(updateSql, Program.GetOpenSettingsConnection()))
 			{
-				cmd.Parameters.AddWithValue("@CheckForUpdates", CheckForUpdates);
-				cmd.Parameters.AddWithValue("@LastUpdateCheck", LastUpdateCheck);
-				cmd.Parameters.AddWithValue("@UpdateCheckFrequency", UpdateCheckFrequency);
-				cmd.Parameters.AddWithValue("@Language", Language);
-				cmd.Parameters.AddWithValue("@CacheSize", CacheSize);
-				cmd.Parameters.AddWithValue("@AlwaysOnTop", AlwaysOnTop);
-				cmd.Parameters.AddWithValue("@RememberWindowPlacement", RememberWindowPlacement);
-				cmd.Parameters.AddWithValue("@ReuseWindow", ReuseWindow);
-				cmd.Parameters.AddWithValue("@FlashWindowWhenDone", FlashWindowWhenDone);
-				cmd.Parameters.AddWithValue("@AutoScrollFileList", AutoScrollFileList);
-				cmd.Parameters.AddWithValue("@Recursive", Recursive);
-				cmd.Parameters.AddWithValue("@HideGoodFiles", HideGoodFiles);
-				cmd.Parameters.AddWithValue("@ShowCommentsPane", ShowCommentsPane);
-				cmd.Parameters.AddWithValue("@UseCachedResults", UseCachedResults);
-				cmd.Parameters.AddWithValue("@WindowHeight", WindowHeight);
-				cmd.Parameters.AddWithValue("@WindowWidth", WindowWidth);
-				cmd.Parameters.AddWithValue("@WindowLeft", WindowLeft);
-				cmd.Parameters.AddWithValue("@WindowTop", WindowTop);
-				cmd.Parameters.AddWithValue("@FormWindowState", FormWindowState);
-				cmd.Parameters.AddWithValue("@UseLowPriorityOnHide", UseLowPriorityOnHide);
-                cmd.Parameters.AddWithValue("@IsRecentFilesSaved", IsRecentFilesSaved);
+				cmd.AddParameter("@CheckForUpdates", CheckForUpdates);
+				cmd.AddParameter("@LastUpdateCheck", LastUpdateCheck);
+				cmd.AddParameter("@UpdateCheckFrequency", UpdateCheckFrequency);
+				cmd.AddParameter("@Language", Language);
+				cmd.AddParameter("@CacheSize", CacheSize);
+				cmd.AddParameter("@AlwaysOnTop", AlwaysOnTop);
+				cmd.AddParameter("@RememberWindowPlacement", RememberWindowPlacement);
+				cmd.AddParameter("@ReuseWindow", ReuseWindow);
+				cmd.AddParameter("@FlashWindowWhenDone", FlashWindowWhenDone);
+				cmd.AddParameter("@AutoScrollFileList", AutoScrollFileList);
+				cmd.AddParameter("@Recursive", Recursive);
+				cmd.AddParameter("@HideGoodFiles", HideGoodFiles);
+				cmd.AddParameter("@ShowCommentsPane", ShowCommentsPane);
+				cmd.AddParameter("@UseCachedResults", UseCachedResults);
+				cmd.AddParameter("@WindowHeight", WindowHeight);
+				cmd.AddParameter("@WindowWidth", WindowWidth);
+				cmd.AddParameter("@WindowLeft", WindowLeft);
+				cmd.AddParameter("@WindowTop", WindowTop);
+				cmd.AddParameter("@FormWindowState", FormWindowState.ToString());
+				cmd.AddParameter("@UseLowPriorityOnHide", UseLowPriorityOnHide);
+                cmd.AddParameter("@IsRecentFilesSaved", IsRecentFilesSaved);
+				cmd.AddParameter("@Theme", Theme.ToString());
 
 				cmd.ExecuteNonQuery();
 			}
 
             if (!IsRecentFilesSaved)
             {
-                using (SqlCeCommand cmd = new SqlCeCommand("delete from RecentFile", Program.GetOpenSettingsConnection()))
+                using (SqliteCommand cmd = new SqliteCommand("delete from RecentFile", Program.GetOpenSettingsConnection()))
                 {
                     cmd.ExecuteNonQuery();
                 }
@@ -118,8 +121,18 @@ IsRecentFilesSaved = @IsRecentFilesSaved
 			UseLowPriorityOnHide = Convert.ToBoolean(dr["UseLowPriorityOnHide"]);
             IsRecentFilesSaved = Convert.ToBoolean(dr["IsRecentFilesSaved"]);
 
+			AppTheme theme;
+			Theme = Enum.TryParse(Convert.ToString(dr["Theme"]), out theme) ? theme : AppTheme.System;
+
 			object lastUpdateCheck = dr["LastUpdateCheck"];
 			LastUpdateCheck = DBNull.Value.Equals(lastUpdateCheck) ? (DateTime?)null : Convert.ToDateTime(lastUpdateCheck);
 		}
+	}
+
+	public enum AppTheme
+	{
+		System,
+		Light,
+		Dark
 	}
 }

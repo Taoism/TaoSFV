@@ -13,6 +13,7 @@ namespace ilSFV
 		public PreferencesForm(bool showAbout)
 		{
 			InitializeComponent();
+			ThemeHelper.Apply(this);
 
             SetLanguage();
 
@@ -42,6 +43,7 @@ namespace ilSFV
 			chkRecursive.Checked = Program.Settings.General.Recursive;
 			chkUseLowPriorityOnHide.Checked = Program.Settings.General.UseLowPriorityOnHide;
             chkIsRecentFilesSaved.Checked = Program.Settings.General.IsRecentFilesSaved;
+			cboTheme.SelectedIndex = (int)Program.Settings.General.Theme;
 
 			// Checking
 			chkAutoFindRenames.Checked = Program.Settings.Check.AutoFindRenames;
@@ -115,6 +117,11 @@ namespace ilSFV
             // General
             tpGeneral.Text = p.General;
             lblLanguage.Text = p.Language;
+            lblTheme.Text = p.Theme;
+            int themeIndex = cboTheme.SelectedIndex;
+            cboTheme.Items.Clear();
+            cboTheme.Items.AddRange(new object[] { p.Theme_System, p.Theme_Light, p.Theme_Dark });
+            cboTheme.SelectedIndex = themeIndex;
             lblCacheSizeLabel.Text = p.CacheSize;
             lblRecords.Text = p.Records;
             btnClearCache.Text = p.ClearCacheButton;
@@ -225,7 +232,7 @@ namespace ilSFV
 
 		private void btnWeb_Click(object sender, EventArgs e)
 		{
-			Process.Start("http://cdtag.com/ilsfv");
+			Program.OpenUrl("https://github.com/judwhite/ilSFV");
 		}
 
 		private void btnOK_Click(object sender, EventArgs e)
@@ -246,6 +253,10 @@ namespace ilSFV
 			Program.Settings.General.Recursive = chkRecursive.Checked;
 			Program.Settings.General.UseLowPriorityOnHide = chkUseLowPriorityOnHide.Checked;
             Program.Settings.General.IsRecentFilesSaved = chkIsRecentFilesSaved.Checked;
+
+			AppTheme theme = (AppTheme)Math.Max(cboTheme.SelectedIndex, 0);
+			bool themeChanged = Program.Settings.General.Theme != theme;
+			Program.Settings.General.Theme = theme;
 
 			int days;
 			if (int.TryParse(txtCheckForUpdatesDays.Text, out days) && days > 0)
@@ -288,7 +299,7 @@ namespace ilSFV
 			Program.Settings.Comments.Footer = txtCommentsFooter.Text;
 
 			// Save
-			if (saveNow)
+			if (saveNow || themeChanged)
 			{
 				Program.Settings.General.Save();
 				Program.Settings.Check.Save();
@@ -297,6 +308,9 @@ namespace ilSFV
 			}
 
 			Cursor.Current = Cursors.Default;
+
+			if (themeChanged)
+				MessageBox.Show(Language.PreferencesForm.ThemeRestart_Message, Language.PreferencesForm.Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
 
 			Close();
 		}

@@ -50,6 +50,21 @@ namespace ilSFV.Localization
         ///<summary>Use low priority on hide</summary>
         public string UseLowPriorityOnHide { get; set; }
 
+        ///<summary>Theme:</summary>
+        public string Theme { get; set; }
+
+        ///<summary>System default</summary>
+        public string Theme_System { get; set; }
+
+        ///<summary>Light</summary>
+        public string Theme_Light { get; set; }
+
+        ///<summary>Dark</summary>
+        public string Theme_Dark { get; set; }
+
+        ///<summary>Restart ilSFV to apply the new theme.</summary>
+        public string ThemeRestart_Message { get; set; }
+
         ///<summary>Cache cleared.</summary>
         public string CacheCleared_Message { get; set; }
 
