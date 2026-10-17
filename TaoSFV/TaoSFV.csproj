@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>TaoSFV</RootNamespace>
     <AssemblyName>TaoSFV</AssemblyName>
-    <ApplicationIcon>MiniDisc Check.ico</ApplicationIcon>
+    <ApplicationIcon>TaoSFV.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
     <ApplicationVisualStyles>true</ApplicationVisualStyles>

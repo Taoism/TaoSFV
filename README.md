@@ -1,3 +1,5 @@
+<img src="art/taosfv-256.png" alt="TaoSFV icon" width="128" align="right">
+
 # TaoSFV
 
 [![MIT License](http://img.shields.io/:license-mit-blue.svg)](https://github.com/judwhite/ilSFV/blob/master/LICENSE) 

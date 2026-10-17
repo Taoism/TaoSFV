@@ -6,7 +6,7 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <RootNamespace>TaoSFV.Cli</RootNamespace>
     <AssemblyName>taosfv-cli</AssemblyName>
-    <ApplicationIcon>..\TaoSFV\MiniDisc Check.ico</ApplicationIcon>
+    <ApplicationIcon>..\TaoSFV\TaoSFV.ico</ApplicationIcon>
     <ApplicationManifest>..\TaoSFV\app.manifest</ApplicationManifest>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>

@@ -17,7 +17,7 @@ DefaultGroupName=TaoSFV
 AllowNoIcons=yes
 OutputDir=.\setup
 OutputBaseFilename=TaoSFVsetup
-SetupIconFile=.\TaoSFV\MiniDisc Check.ico
+SetupIconFile=.\TaoSFV\TaoSFV.ico
 Compression=lzma
 SolidCompression=yes
 
