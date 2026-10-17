@@ -110,6 +110,36 @@ namespace TaoSFV.Model.Workset
 		}
 
 		/// <summary>
+		/// md5sum compatibility applies to md5sum-style files only: "digest *name" with '/' separators, LF line
+		/// endings and '#' comments, which md5sum -c / sha256sum -c accept. Everything else keeps the hkSFV
+		/// conventions ('\', CRLF, ';').
+		/// </summary>
+		public static bool IsMd5SumStyle(ChecksumAlgorithm algorithm, bool md5SumCompatibility)
+		{
+			return md5SumCompatibility && algorithm.DigestFirst;
+		}
+
+		public static string GetNewLine(ChecksumAlgorithm algorithm, bool md5SumCompatibility)
+		{
+			return IsMd5SumStyle(algorithm, md5SumCompatibility) ? "\n" : "\r\n";
+		}
+
+		public static string FormatComment(ChecksumAlgorithm algorithm, bool md5SumCompatibility, string comment)
+		{
+			return (IsMd5SumStyle(algorithm, md5SumCompatibility) ? "#" : ";") + comment;
+		}
+
+		/// <summary>One entry line, without the line ending. fileName is relative to the checksum file, with '\' separators.</summary>
+		public static string FormatEntry(ChecksumAlgorithm algorithm, bool md5SumCompatibility, string fileName, string checksum)
+		{
+			if (!algorithm.DigestFirst)
+				return fileName + " " + checksum;
+			if (md5SumCompatibility)
+				return checksum + " *" + fileName.Replace('\\', '/');
+			return checksum + " " + fileName;
+		}
+
+		/// <summary>
 		/// True for comment lines: ';' in any file, '#' in md5sum-style files. Expects a trimmed line.
 		/// </summary>
 		public static bool IsComment(string line, ChecksumType type)

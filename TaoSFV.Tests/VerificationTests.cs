@@ -159,7 +159,7 @@ namespace TaoSFV.Tests
 		}
 
 		[Fact]
-		public void Verify_PauseBlocksReadingUntilResumed()
+		public async Task Verify_PauseBlocksReadingUntilResumed()
 		{
 			string path = WriteFile("big.bin", 8 * 1024 * 1024, 7);
 			ChecksumSet set = new ChecksumSet(Path.Combine(_dir, "set.sfv"), _dir, ChecksumType.SFV);
@@ -170,12 +170,12 @@ namespace TaoSFV.Tests
 
 			Task<ChecksumFileState> task = Task.Run(() => FileVerifier.Verify(set, file, VerifyOptions.ReadOnly(false), NoCache, context));
 
-			Assert.False(task.Wait(300));
+			Assert.NotSame(task, await Task.WhenAny(task, Task.Delay(300)));
 			Assert.Equal(0, context.BytesProcessed);
 
 			gate.Resume();
-			Assert.True(task.Wait(10000));
-			Assert.Equal(ChecksumFileState.OK, task.Result);
+			Assert.Same(task, await Task.WhenAny(task, Task.Delay(10000)));
+			Assert.Equal(ChecksumFileState.OK, await task);
 		}
 
 		[Fact]
@@ -197,6 +197,35 @@ namespace TaoSFV.Tests
 
 			Assert.Equal(expected, set.Files.Select(f => f.State.ToString()).ToList());
 			Assert.Equal(set.Files.Sum(f => f.FileInfo.Length), context.BytesProcessed);
+		}
+
+		[Fact]
+		public void LongPaths_LoadAndVerify()
+		{
+			// a set nested past MAX_PATH, plus a set whose relative entry is itself longer than 260 characters
+			string deep = _dir;
+			for (int i = 1; i <= 6; i++)
+				deep = Path.Combine(deep, "A very long folder name for testing paths beyond MAX_PATH " + i);
+			Directory.CreateDirectory(deep);
+			string file = Path.Combine(deep, "track01.flac");
+			File.WriteAllBytes(file, Enumerable.Range(0, 5000).Select(i => (byte)i).ToArray());
+			Assert.True(file.Length > 300);
+
+			string crc = Hash(ChecksumAlgorithm.Sfv, file);
+			string relative = file.Substring(_dir.Length + 1);
+			ChecksumFileFormat.WriteAllText(Path.Combine(deep, "album.sfv"), "track01.flac " + crc + "\r\n");
+			ChecksumFileFormat.WriteAllText(Path.Combine(_dir, "top.sfv"), relative + " " + crc + "\r\n");
+
+			List<string> found = ChecksumSetLoader.FindChecksumFiles(_dir);
+			Assert.Equal(2, found.Count);
+
+			foreach (string checksumFile in found)
+			{
+				ChecksumSet set = ChecksumSetLoader.Parse(checksumFile);
+				ChecksumSetLoader.ResolveFiles(set, null);
+				Assert.NotNull(set.Files[0].FileInfo);
+				Assert.Equal(ChecksumFileState.OK, FileVerifier.Verify(set, set.Files[0], VerifyOptions.ReadOnly(false), NoCache, new VerifyContext(CancellationToken.None)));
+			}
 		}
 
 		[Fact]

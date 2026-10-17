@@ -345,7 +345,11 @@ namespace TaoSFV
                 fo.fFlags.FOF_ALLOWUNDO = true;
                 fo.fFlags.FOF_NOCONFIRMATION = true;
                 fo.pFrom = fileName;
-                fo.Execute();
+
+                // SHFileOperation can't take paths of 260+ characters; the file is then left in place rather
+                // than deleted permanently
+                if (!fo.Execute())
+                    Trace.WriteLine(string.Format("Couldn't move {0} to the Recycle Bin", fileName));
             }
             else
             {

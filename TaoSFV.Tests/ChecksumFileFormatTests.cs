@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using TaoSFV.Hash;
 using TaoSFV.Model.Workset;
 using Xunit;
 
@@ -139,6 +140,49 @@ namespace TaoSFV.Tests
 			Assert.True(ChecksumFileFormat.IsComment("# sha1 comment", ChecksumType.SHA1));
 			Assert.False(ChecksumFileFormat.IsComment(EmptyMD5 + " *x", ChecksumType.MD5));
 			Assert.True(ChecksumFileFormat.IsComment("# sha256 comment", ChecksumType.SHA256));
+		}
+
+		// --- writing entries
+
+		[Fact]
+		public void Md5SumStyle_UsesSlashesLfAndHashComments()
+		{
+			ChecksumAlgorithm sha256 = ChecksumAlgorithm.Sha256;
+
+			Assert.Equal(EmptySHA256 + " *CD 1/track.flac", ChecksumFileFormat.FormatEntry(sha256, true, @"CD 1\track.flac", EmptySHA256));
+			Assert.Equal("\n", ChecksumFileFormat.GetNewLine(sha256, true));
+			Assert.Equal("# made by TaoSFV", ChecksumFileFormat.FormatComment(sha256, true, " made by TaoSFV"));
+		}
+
+		[Fact]
+		public void HkSfvStyle_KeepsBackslashesCrlfAndSemicolonComments()
+		{
+			// SFV ignores md5sum compatibility; md5sum-style files without it keep the ilSFV layout
+			Assert.Equal(@"CD 1\track.flac AF67A815", ChecksumFileFormat.FormatEntry(ChecksumAlgorithm.Sfv, true, @"CD 1\track.flac", "AF67A815"));
+			Assert.Equal("\r\n", ChecksumFileFormat.GetNewLine(ChecksumAlgorithm.Sfv, true));
+			Assert.Equal("; note", ChecksumFileFormat.FormatComment(ChecksumAlgorithm.Sfv, true, " note"));
+
+			Assert.Equal(EmptyMD5 + @" CD 1\track.flac", ChecksumFileFormat.FormatEntry(ChecksumAlgorithm.Md5, false, @"CD 1\track.flac", EmptyMD5));
+			Assert.Equal("\r\n", ChecksumFileFormat.GetNewLine(ChecksumAlgorithm.Md5, false));
+		}
+
+		[Theory]
+		[InlineData("sfv", true)]
+		[InlineData("md5", true)]
+		[InlineData("md5", false)]
+		[InlineData("sha512", true)]
+		public void WrittenEntries_ParseBack(string extension, bool md5SumCompatibility)
+		{
+			ChecksumAlgorithm algorithm = ChecksumAlgorithm.FromExtension(extension);
+			string digest = algorithm.Type == ChecksumType.SFV ? "AF67A815" : new string('a', algorithm.DigestLength);
+			string line = ChecksumFileFormat.FormatEntry(algorithm, md5SumCompatibility, @"Disc 1\01 Intro.flac", digest);
+			string comment = ChecksumFileFormat.FormatComment(algorithm, md5SumCompatibility, " header");
+
+			string name, checksum;
+			Assert.True(ChecksumFileFormat.IsComment(comment, algorithm.Type));
+			Assert.True(ChecksumFileFormat.TryParseLine(line, algorithm.Type, out name, out checksum));
+			Assert.Equal(@"Disc 1\01 Intro.flac", name);
+			Assert.Equal(digest, checksum);
 		}
 
 		// --- encodings

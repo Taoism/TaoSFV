@@ -60,6 +60,8 @@ dotnet test TaoSFV.Tests
 - File associations and the Explorer "TaoSFV" menu are registered per user (HKCU), with no administrator prompt; Tools > Unregister File Types removes them.
 - Checking runs on background threads, several files at once on SSDs; Pause now really pauses reading.
 - SHA-256 and SHA-512 files (`.sha256`, `.sha512`), including in the cache, Explorer menus and File → New.
+- "md5sum compatibility" (Preferences > Creating) now writes `/` separators, LF line endings and `#` comments, so GNU `md5sum -c` / `sha256sum -c` read the files without warnings. SFV files keep the hkSFV layout.
+- Paths longer than 260 characters work (the apps are long-path aware; Windows' LongPathsEnabled setting must be on). Moving a failed file to the Recycle Bin still can't handle such paths, so it is left in place.
 - Fixed an intermittent startup error ("A generic error occurred in GDI+") that left the main window invisible.
 - Links that pointed at the defunct cdtag.com (web, update check, bug reports) now go to the original ilSFV GitHub repository.
 
