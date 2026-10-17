@@ -1,8 +1,10 @@
-# ilSFV
+# TaoSFV
 
 [![MIT License](http://img.shields.io/:license-mit-blue.svg)](https://github.com/judwhite/ilSFV/blob/master/LICENSE) 
 
-SFV, MD5 and SHA-1 file verification utility. Check [Releases](https://github.com/judwhite/ilSFV/releases) for downloads.
+SFV, MD5 and SHA-1 file verification utility.
+
+TaoSFV is a tribute to ilSFV and rekSFV. It continues [ilSFV](https://github.com/judwhite/ilSFV) by Jud White (itself a tribute to hkSFV), ported to .NET 10 with a dark mode.
 
 - Multi-language support (currently English, German, Chinese, Russian)
 - Supports SFV, MD5, and SHA-1
@@ -19,17 +21,17 @@ SFV, MD5 and SHA-1 file verification utility. Check [Releases](https://github.co
 Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (the app itself needs the .NET 10 Desktop Runtime).
 
 ```
-dotnet build ilSFV\ilSFV.csproj -c Release
-dotnet publish ilSFV\ilSFV.csproj -c Release -o publish
+dotnet build TaoSFV\TaoSFV.csproj -c Release
+dotnet publish TaoSFV\TaoSFV.csproj -c Release -o publish
 ```
 
-### Changes from 1.11 (.NET Framework 3.5)
+### Changes from ilSFV 1.11 (.NET Framework 3.5)
 
 - Ported to .NET 10 WinForms (SDK-style project, system-aware high DPI).
 - Dark mode via WinForms' built-in color modes, with fixes for the group headers, status bar and tab pages.
-- Settings and the checksum cache moved from SQL Server Compact (`*.sdf`) to SQLite (`settings.db`, `cache.db` in `%LOCALAPPDATA%\ilSFV`). Old `.sdf` settings are not migrated; defaults are used on first run.
+- Settings and the checksum cache moved from SQL Server Compact (`*.sdf`) to SQLite (`settings.db`, `cache.db` in `%LOCALAPPDATA%\TaoSFV`). Old `.sdf` settings are not migrated; defaults are used on first run.
 - Stopping a check no longer relies on `Thread.Abort` (unsupported on .NET); MD5/SHA-1 hashing is now thread-safe.
-- Links that pointed at the defunct cdtag.com (web, update check, bug reports) now go to this GitHub repository.
+- Links that pointed at the defunct cdtag.com (web, update check, bug reports) now go to the original ilSFV GitHub repository.
 
 ## Project Status
 
@@ -37,4 +39,4 @@ Maintained. Issues and Pull Requests will be responded to.
 
 ## License
 
-ilSFV is under the MIT license. See the [LICENSE](https://github.com/judwhite/ilSFV/blob/master/LICENSE) file for details.
+TaoSFV, like ilSFV, is under the MIT license. See the [LICENSE](https://github.com/judwhite/ilSFV/blob/master/LICENSE) file for details.
