@@ -24,6 +24,7 @@ namespace TaoSFV
 			Title = "TaoSFV results, {0:yyyy-MM-dd HH:mm}";
 			Summary = "{0:#,0} files in {1:#,0} sets: {2}";
 			BadDetail = "expected {0}, got {1}";
+			NotRead = "Checksum file not read";
 			States = new Dictionary<ChecksumFileState, string>
 			{
 				{ ChecksumFileState.NotProcessed, "Not checked" },
@@ -42,6 +43,9 @@ namespace TaoSFV
 
 		/// <summary>{0}: checksum in the file, {1}: checksum computed.</summary>
 		public string BadDetail { get; set; }
+
+		/// <summary>For a checksum file that couldn't be read at all (missing, locked, not in a known format).</summary>
+		public string NotRead { get; set; }
 
 		public Dictionary<ChecksumFileState, string> States { get; private set; }
 
@@ -69,27 +73,28 @@ namespace TaoSFV
 			return ResultsFormat.Text;
 		}
 
-		public static void Save(string fileName, IList<ChecksumSet> sets, ResultsText text, DateTime when)
+		public static void Save(string fileName, IList<ChecksumSet> sets, ResultsText text, DateTime when, IList<SkippedChecksumFile> skipped = null)
 		{
 			ResultsFormat format = FormatFromFileName(fileName);
 			// a BOM so Excel reads a CSV's non-ASCII names correctly
 			Encoding encoding = new UTF8Encoding(format == ResultsFormat.Csv);
 			using (StreamWriter writer = new StreamWriter(fileName, false, encoding))
-				Write(writer, sets, format, text, when);
+				Write(writer, sets, format, text, when, skipped);
 		}
 
-		public static void Write(TextWriter writer, IList<ChecksumSet> sets, ResultsFormat format, ResultsText text, DateTime when)
+		public static void Write(TextWriter writer, IList<ChecksumSet> sets, ResultsFormat format, ResultsText text, DateTime when, IList<SkippedChecksumFile> skipped = null)
 		{
+			skipped = skipped ?? new SkippedChecksumFile[0];
 			switch (format)
 			{
 				case ResultsFormat.Csv:
-					WriteCsv(writer, sets, text);
+					WriteCsv(writer, sets, text, skipped);
 					break;
 				case ResultsFormat.Html:
-					WriteHtml(writer, sets, text, when);
+					WriteHtml(writer, sets, text, when, skipped);
 					break;
 				default:
-					WriteText(writer, sets, text, when);
+					WriteText(writer, sets, text, when, skipped);
 					break;
 			}
 		}
@@ -121,10 +126,12 @@ namespace TaoSFV
 			return null;
 		}
 
-		private static void WriteText(TextWriter writer, IList<ChecksumSet> sets, ResultsText text, DateTime when)
+		private static void WriteText(TextWriter writer, IList<ChecksumSet> sets, ResultsText text, DateTime when, IList<SkippedChecksumFile> skipped)
 		{
 			writer.WriteLine(string.Format(text.Title, when));
 			writer.WriteLine(Summary(sets, text));
+			foreach (SkippedChecksumFile file in skipped)
+				writer.WriteLine(text.NotRead + ": " + file.Path + "  (" + file.Error.Message + ")");
 
 			int width = Enum.GetValues(typeof(ChecksumFileState)).Cast<ChecksumFileState>().Max(s => text.StateName(s).Length);
 			foreach (ChecksumSet set in sets)
@@ -139,9 +146,11 @@ namespace TaoSFV
 			}
 		}
 
-		private static void WriteCsv(TextWriter writer, IList<ChecksumSet> sets, ResultsText text)
+		private static void WriteCsv(TextWriter writer, IList<ChecksumSet> sets, ResultsText text, IList<SkippedChecksumFile> skipped)
 		{
 			writer.WriteLine("Checksum file,File,Result,Expected,Actual,Size,Error");
+			foreach (SkippedChecksumFile file in skipped)
+				writer.WriteLine(Csv(file.Path) + ",," + Csv(text.NotRead) + ",,,," + Csv(file.Error.Message));
 			foreach (ChecksumSet set in sets)
 			{
 				foreach (ChecksumFile file in set.Files)
@@ -170,7 +179,7 @@ namespace TaoSFV
 			return value;
 		}
 
-		private static void WriteHtml(TextWriter writer, IList<ChecksumSet> sets, ResultsText text, DateTime when)
+		private static void WriteHtml(TextWriter writer, IList<ChecksumSet> sets, ResultsText text, DateTime when, IList<SkippedChecksumFile> skipped)
 		{
 			string title = string.Format(text.Title, when);
 			writer.WriteLine("<!doctype html>");
@@ -188,6 +197,11 @@ namespace TaoSFV
 			writer.WriteLine("<h1>" + H(title) + "</h1>");
 			writer.WriteLine("<p class=\"summary\">" + H(Summary(sets, text)) + "</p>");
 			writer.WriteLine("<table>");
+			foreach (SkippedChecksumFile file in skipped)
+			{
+				writer.WriteLine(string.Format("<tr><td class=\"state Unreadable\">{0}</td><td>{1}</td><td class=\"detail\">{2}</td></tr>",
+					H(text.NotRead), H(file.Path), H(file.Error.Message)));
+			}
 			foreach (ChecksumSet set in sets)
 			{
 				writer.WriteLine("<tr class=\"set\"><td colspan=\"3\">" + H(set.VerificationFileName) + "</td></tr>");

@@ -28,7 +28,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 
 ## Features
 
-- [ ] **Scheduled checks.** "Schedule weekly check..." that sets up Task Scheduler with `taosfv-cli verify <folder>`
+- [x] **Scheduled checks.** "Schedule weekly check..." that sets up Task Scheduler with `taosfv-cli verify <folder>`
       and only notifies when something fails.
 - [x] **Save results.** Export a run's results as text, CSV or HTML.
 - [x] **Parallel reads setting.** Preferences option to override the automatic choice (4 on SSDs, 1 on hard

@@ -33,8 +33,11 @@ namespace TaoSFV
             // checksum files are read/written with legacy code pages, which .NET only provides via this provider
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-            bool ok;
-            Mutex mutex = new Mutex(true, "{CE7485F4-1CD3-4201-8CAD-AFE0F80C3061}", out ok);
+            // a scheduled check runs without a window and must not take the single-instance mutex: TaoSFV opened
+            // meanwhile would otherwise hand its files to it
+            bool scheduled = args != null && args.Length == 2 && args[0].ToLower() == ScheduledCheckRun.Argument;
+            bool ok = true;
+            Mutex mutex = scheduled ? null : new Mutex(true, "{CE7485F4-1CD3-4201-8CAD-AFE0F80C3061}", out ok);
             bool anotherInstance = !ok;
 
             try
@@ -58,6 +61,14 @@ namespace TaoSFV
                 Settings.Comments.Load();
 
                 Language.Load(Settings.General.Language);
+
+                if (scheduled)
+                {
+                    Application.EnableVisualStyles();
+                    Application.SetHighDpiMode(HighDpiMode.SystemAware);
+                    ScheduledCheckRun.Run(args[1]);
+                    return;
+                }
 
                 Mutex createMutex = null;
                 bool anotherCreateInstance = false;
@@ -178,7 +189,7 @@ namespace TaoSFV
             }
             finally
             {
-                if (!anotherInstance)
+                if (mutex != null && !anotherInstance)
                     mutex.ReleaseMutex();
             }
         }

@@ -299,6 +299,87 @@ namespace TaoSFV.Localization
         ///<summary>Unreadable</summary>
         public string SaveResults_Unreadable { get; set; }
 
+        ///<summary>Sc&amp;hedule Checks...</summary>
+        public string Menu_Tools_ScheduleChecks { get; set; }
+
+        ///<summary>Checksum file not read</summary>
+        public string SaveResults_NotRead { get; set; }
+
+        ///<summary>TaoSFV found problems in {0}</summary>
+        public string ScheduledCheck_Failed_Title { get; set; }
+
+        ///<summary>{0:#,0} checksum file(s) couldn&apos;t be read.</summary>
+        public string ScheduledCheck_NotRead { get; set; }
+
+        ///<summary>Click to see the report.</summary>
+        public string ScheduledCheck_ClickForReport { get; set; }
+
+        ///<summary>Scheduled Checks</summary>
+        public string ScheduleChecks_Title { get; set; }
+
+        ///<summary>TaoSFV checks these folders on a schedule while you&apos;re signed in, reading every file, and only notifies you if one is bad, missing or unreadable. A check missed while the PC was off runs as soon as it can.</summary>
+        public string ScheduleChecks_Intro { get; set; }
+
+        ///<summary>Folder</summary>
+        public string ScheduleChecks_FolderColumn { get; set; }
+
+        ///<summary>When</summary>
+        public string ScheduleChecks_WhenColumn { get; set; }
+
+        ///<summary>Next check</summary>
+        public string ScheduleChecks_NextRunColumn { get; set; }
+
+        ///<summary>Last check</summary>
+        public string ScheduleChecks_LastRunColumn { get; set; }
+
+        ///<summary>Folder:</summary>
+        public string ScheduleChecks_Folder { get; set; }
+
+        ///<summary>Browse...</summary>
+        public string ScheduleChecks_Browse { get; set; }
+
+        ///<summary>Every</summary>
+        public string ScheduleChecks_Every { get; set; }
+
+        ///<summary>day</summary>
+        public string ScheduleChecks_Daily { get; set; }
+
+        ///<summary>week</summary>
+        public string ScheduleChecks_Weekly { get; set; }
+
+        ///<summary>month</summary>
+        public string ScheduleChecks_Monthly { get; set; }
+
+        ///<summary>on</summary>
+        public string ScheduleChecks_On { get; set; }
+
+        ///<summary>at</summary>
+        public string ScheduleChecks_At { get; set; }
+
+        ///<summary>&amp;Add / Update</summary>
+        public string ScheduleChecks_Save { get; set; }
+
+        ///<summary>&amp;Remove</summary>
+        public string ScheduleChecks_Remove { get; set; }
+
+        ///<summary>Open Reports Folder</summary>
+        public string ScheduleChecks_Reports { get; set; }
+
+        ///<summary>Every day at {0:t}</summary>
+        public string ScheduleChecks_DailyAt { get; set; }
+
+        ///<summary>Every {1} at {0:t}</summary>
+        public string ScheduleChecks_WeeklyAt { get; set; }
+
+        ///<summary>Day {1} of every month at {0:t}</summary>
+        public string ScheduleChecks_MonthlyAt { get; set; }
+
+        ///<summary>The folder &apos;{0}&apos; doesn&apos;t exist.</summary>
+        public string ScheduleChecks_FolderNotFound { get; set; }
+
+        ///<summary>Task Scheduler couldn&apos;t save the change:\n\n{0}</summary>
+        public string ScheduleChecks_Error { get; set; }
+
         ///<summary>Failed Files Not Deleted</summary>
         public string NotRecycled_Title { get; set; }
 

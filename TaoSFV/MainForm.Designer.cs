@@ -64,6 +64,7 @@
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.miFindDuplicateFiles = new System.Windows.Forms.ToolStripMenuItem();
             this.miTruncateFileNames = new System.Windows.Forms.ToolStripMenuItem();
+            this.miScheduleChecks = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.miRegisterFileTypes = new System.Windows.Forms.ToolStripMenuItem();
             this.miUnregisterFileTypes = new System.Windows.Forms.ToolStripMenuItem();
@@ -355,6 +356,7 @@
             this.toolStripSeparator4,
             this.miFindDuplicateFiles,
             this.miTruncateFileNames,
+            this.miScheduleChecks,
             this.toolStripSeparator6,
             this.miRegisterFileTypes,
             this.miUnregisterFileTypes,
@@ -396,6 +398,13 @@
             this.miTruncateFileNames.Size = new System.Drawing.Size(326, 22);
             this.miTruncateFileNames.Text = "&Truncate File Names...";
             this.miTruncateFileNames.Click += new System.EventHandler(this.miTruncateFileNames_Click);
+            // 
+            // miScheduleChecks
+            // 
+            this.miScheduleChecks.Name = "miScheduleChecks";
+            this.miScheduleChecks.Size = new System.Drawing.Size(326, 22);
+            this.miScheduleChecks.Text = "Sc&hedule Checks...";
+            this.miScheduleChecks.Click += new System.EventHandler(this.miScheduleChecks_Click);
             // 
             // toolStripSeparator6
             // 
@@ -923,6 +932,7 @@
 		private System.Windows.Forms.ToolStripMenuItem miFindDuplicateFiles;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
 		private System.Windows.Forms.ToolStripMenuItem miTruncateFileNames;
+		private System.Windows.Forms.ToolStripMenuItem miScheduleChecks;
     }
 }
 

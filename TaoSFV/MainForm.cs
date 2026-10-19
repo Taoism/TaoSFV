@@ -787,21 +787,9 @@ export results to text file
                 fileName = dialog.FileName;
             }
 
-            ResultsText text = new ResultsText
-            {
-                Title = p.SaveResults_Title,
-                Summary = p.SaveResults_Summary,
-                BadDetail = p.SaveResults_BadDetail
-            };
-            text.States[ChecksumFileState.NotProcessed] = p.SaveResults_NotChecked;
-            text.States[ChecksumFileState.OK] = p.SaveResults_OK;
-            text.States[ChecksumFileState.Bad] = p.SaveResults_Bad;
-            text.States[ChecksumFileState.Missing] = p.SaveResults_Missing;
-            text.States[ChecksumFileState.Unreadable] = p.SaveResults_Unreadable;
-
             try
             {
-                ResultsExporter.Save(fileName, _sets, text, DateTime.Now);
+                ResultsExporter.Save(fileName, _sets, ScheduledCheckRun.LocalizedResultsText(), DateTime.Now);
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
@@ -2554,6 +2542,12 @@ export results to text file
             Cursor.Current = Cursors.Default;
         }
 
+        private void miScheduleChecks_Click(object sender, EventArgs e)
+        {
+            using (ScheduleChecksForm form = new ScheduleChecksForm())
+                form.ShowDialog(this);
+        }
+
         private void miTruncateFileNames_Click(object sender, EventArgs e)
         {
             string strMaxLength;
@@ -2634,6 +2628,7 @@ export results to text file
             miUseCachedResults.Text = p.Menu_Tools_UseCachedResults;
             miFindDuplicateFiles.Text = p.Menu_Tools_FindDeleteDuplicateFilesUsingChecksum;
             miTruncateFileNames.Text = p.Menu_Tools_TruncateFileNames;
+            miScheduleChecks.Text = p.Menu_Tools_ScheduleChecks;
             miRegisterFileTypes.Text = p.Menu_Tools_RegisterFileTypes;
             miUnregisterFileTypes.Text = p.Menu_Tools_UnregisterFileTypes;
             miImportIlsfv.Text = p.Menu_Tools_ImportIlsfvSettings;
