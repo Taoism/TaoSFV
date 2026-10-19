@@ -6,7 +6,7 @@
 
 SFV, MD5, SHA-1, SHA-256 and SHA-512 file verification utility for Windows, with a command-line version.
 
-TaoSFV is a tribute to ilSFV and rekSFV. It continues [ilSFV](https://github.com/judwhite/ilSFV) by Jud White (itself a tribute to hkSFV), ported to .NET 10 with a dark mode.
+TaoSFV is made in tribute to ilSFV and hkSFV. It continues [ilSFV](https://github.com/judwhite/ilSFV) by Jud White, ported to .NET 10 with a dark mode. Thanks Jud!
 
 - Multi-language support (currently English, German, Chinese, Russian)
 - Supports SFV, MD5, SHA-1, SHA-256 and SHA-512 (md5sum/sha256sum, BSD `--tag` and hkSFV formats)

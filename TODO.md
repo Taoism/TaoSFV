@@ -4,7 +4,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 
 ## Bugs and rough edges
 
-- [ ] **Friendly message for a bad checksum file.** Opening a single malformed `.sfv`/`.md5` shows the crash dialog
+- [x] **Friendly message for a bad checksum file.** Opening a single malformed `.sfv`/`.md5` shows the crash dialog
       ("An error has occurred", stack trace, Report bug). It should be a plain message naming the file and line.
       Folder checks already skip such files and list them.
 - [ ] **Load folders in the background.** Verifying a big tree (e.g. 1,831 sets) scans folders and reads every
@@ -41,7 +41,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 - [ ] **Sharper text on high-DPI screens.** Windows are laid out in fixed pixels and run system-DPI-aware.
 - [ ] **Comments template after importing.** Offer to update a header that still says "ilSFV" or links to
       cdtag.com. (This machine's TaoSFV template says "Using ilSFV" because its database predates the rename.)
-- [ ] **Make the README and release notes match the About tab.** About now says "TaoSFV made in tribute to ilSFV
+- [x] **Make the README and release notes match the About tab.** About now says "TaoSFV made in tribute to ilSFV
       and hkSFV, Thanks Jud!", but two places still say "a tribute to ilSFV and rekSFV": the README intro
       (`README.md`, line 7) and the TaoSFV 2.0 entry in the release notes (`TaoSFV/ReleaseNotesForm.resx`).
 - [x] **Redesign the icon and logo.** Done: circuit-board yin-yang with a glass check (`art/icon-source.png`,

@@ -269,6 +269,12 @@ namespace TaoSFV.Localization
         ///<summary>{0} checksum file(s) couldn't be read and were skipped. The others are checked as usual.\n\n{1}</summary>
         public string SkippedChecksumFiles_Message { get; set; }
 
+        ///<summary>Checksum File Not Read</summary>
+        public string UnreadableChecksumFile_Title { get; set; }
+
+        ///<summary>File '{0}' couldn't be read.\n\n{1}</summary>
+        public string UnreadableChecksumFile_Message { get; set; }
+
         ///<summary>Copy File Name(s)</summary>
         public string CopyFileNamesContextMenu { get; set; }
 

@@ -825,7 +825,7 @@ export results to text file
                     {
                         try
                         {
-                            LoadAndVerifyFile(verifyFile, doVerify, getFileInfo);
+                            LoadAndVerifyChecksumFile(verifyFile, doVerify, getFileInfo);
                         }
                         catch (Exception ex) when (ex is InvalidChecksumFileException || ex is IOException || ex is UnauthorizedAccessException)
                         {
@@ -860,6 +860,32 @@ export results to text file
             if (!ChecksumAlgorithm.IsChecksumFile(fileName))
                 return false;
 
+            // a malformed or locked checksum file is the user's problem to fix, not a crash to report
+            try
+            {
+                return LoadAndVerifyChecksumFile(fileName, doVerify, getFileInfo);
+            }
+            catch (InvalidChecksumFileException ex)
+            {
+                Trace.WriteLine(ex);
+                SetStatusText(Language.MainForm.Status_Ready);
+                MessageBox.Show(this, string.Format(Language.MainForm.FileContentsNotRecognized, fileName, ex.ChecksumType, ex.Message),
+                    Language.MainForm.UnreadableChecksumFile_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                Trace.WriteLine(ex);
+                SetStatusText(Language.MainForm.Status_Ready);
+                MessageBox.Show(this, string.Format(Language.MainForm.UnreadableChecksumFile_Message, fileName, ex.Message),
+                    Language.MainForm.UnreadableChecksumFile_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+        }
+
+        // loads one checksum file; throws for a file that can't be read or parsed
+        private bool LoadAndVerifyChecksumFile(string fileName, bool doVerify, bool getFileInfo)
+        {
             SetStatusText(string.Format(Language.MainForm.Status_LoadingFile, fileName));
             Application.DoEvents();
 

@@ -221,7 +221,22 @@ namespace TaoSFV.Tests
 			string path = Path.Combine(_dir, "bad.sfv");
 			File.WriteAllText(path, "good.flac AF67A815\r\nthis is not a checksum line\r\n");
 
-			Assert.Throws<InvalidChecksumFileException>(() => ChecksumSetLoader.Parse(path));
+			var ex = Assert.Throws<InvalidChecksumFileException>(() => ChecksumSetLoader.Parse(path));
+			Assert.Equal(path, ex.FileName);
+			Assert.Equal(ChecksumType.SFV, ex.ChecksumType);
+			Assert.Equal(2, ex.LineNumber);
+			Assert.Equal("Line 2: \"this is not a checksum line\"", ex.Message);
+		}
+
+		[Fact]
+		public void Loader_ShortensLongGarbageLineInMessage()
+		{
+			string path = Path.Combine(_dir, "binary.sfv");
+			File.WriteAllText(path, new string('x', 5000));
+
+			var ex = Assert.Throws<InvalidChecksumFileException>(() => ChecksumSetLoader.Parse(path));
+			Assert.True(ex.Message.Length < 300, ex.Message.Length.ToString());
+			Assert.EndsWith("...\"", ex.Message);
 		}
 
 		// --- encodings

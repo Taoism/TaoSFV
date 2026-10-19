@@ -129,6 +129,8 @@ ImportIlsfv_Done_Message                          = ilSFV settings imported: pre
 ImportIlsfv_Error_Message                         = ilSFV's settings couldn't be imported.\n\n{0}
 SkippedChecksumFiles_Title                        = Checksum Files Skipped
 SkippedChecksumFiles_Message                      = {0} checksum file(s) couldn't be read and were skipped. The others are checked as usual.\n\n{1}
+UnreadableChecksumFile_Title                      = Checksum File Not Read
+UnreadableChecksumFile_Message                    = File '{0}' couldn't be read.\n\n{1}
 
 CopyFileNamesContextMenu                          = Copy File Name(s)
 CopyPathAndFileNamesContextMenu                   = Copy Path + File Name(s)
