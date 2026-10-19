@@ -140,6 +140,8 @@ CopyOriginalChecksumContextMenu                   = Copy Original Checksum ({0})
 TruncateFileNames_MaxLength                       = Max Length
 TruncateFileNames_MinimumLengthIs12               = Minimum length is 12.
 TruncateFileNames_FilesRenamed_Message            = {0:#,0} file(s) renamed.
+TruncateFileNames_NotRenamed_Message              = {0:#,0} file(s) couldn't be renamed:\n\n{1}
+TruncateFileNames_NoRoom                          = The extension leaves no room for a shorter name.
 
 FolderBrowseDialog_Title                          = Select a Folder
 
@@ -243,6 +245,8 @@ ConfirmDelete_Message_FileListHeader              = The following items will be 
 ConfirmDelete_Title                               = Delete duplicates
 RewriteChecksum_Message                           = Would you like to rewrite the checksum file without the {0:#,0} deleted files?\n\nNote: Comments will be removed.
 RewriteChecksum_Title                             = Rewrite Checksum File
+DeleteFailed_Message                              = {0:#,0} file(s) couldn't be deleted and stay in the checksum file:\n\n{1}
+NotRecycled                                       = The Recycle Bin wouldn't take it (it can't hold paths of 260 characters or more).
 
 ### Exception Form
 

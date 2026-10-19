@@ -13,10 +13,7 @@ namespace TaoSFV
     public partial class RemoveDuplicatesForm : Form
     {
         private readonly ChecksumSet _set;
-        private IEnumerable<IGrouping<string, ChecksumFile>> _dupeSet;
-
-        //private readonly string[] _ignoreExtensions = new[] { ".jpg", ".log", ".cue", ".m3u", ".exe", ".cfg", ".lst", ".mov", ".nfo" };
-        private readonly string[] _ignoreExtensions = new string[] { };
+        private List<List<ChecksumFile>> _dupeSet;
 
         public RemoveDuplicatesForm(ChecksumSet set)
         {
@@ -24,6 +21,11 @@ namespace TaoSFV
             ThemeHelper.Apply(this);
 
             _set = set;
+
+            // a virtual list: thousands of real rows took seconds to create when the window opened
+            lvwGroupings.VirtualMode = true;
+            lvwGroupings.RetrieveVirtualItem += lvwGroupings_RetrieveVirtualItem;
+            Load += (sender, e) => SelectFirstGroup();
 
             InitializeFormVariables();
 
@@ -52,63 +54,50 @@ namespace TaoSFV
 
         private void InitializeFormVariables()
         {
-            _dupeSet = GetDuplicates();
-
+            // files no longer on disk aren't duplicates to choose between
             string dir = _set.Directory;
-            foreach (IGrouping<string, ChecksumFile> group in _dupeSet)
+            foreach (List<ChecksumFile> group in DuplicateFinder.GetDuplicates(_set))
             {
-                foreach (ChecksumFile file in group.Where(p => p.IsDeleted == false))
+                foreach (ChecksumFile file in group)
                 {
                     if (!File.Exists(Path.Combine(dir, file.FileName)))
                         file.IsDeleted = true;
                 }
             }
 
-            _dupeSet = GetDuplicates();
-
             RebuildGroupings();
         }
 
         private void RebuildGroupings()
         {
-            lvwGroupings.BeginUpdate();
-            try
-            {
-                lvwGroupings.Items.Clear();
-                int totalCount = _dupeSet.Count();
-                int currentFile = 1;
-                foreach (IGrouping<string, ChecksumFile> group in _dupeSet)
-                {
-                    int groupCount = group.Where(p => p.IsDeleted == false).Count();
-                    if (groupCount > 1)
-                    {
-                        ListViewItem item = new ListViewItem();
-                        item.Text = string.Format("{0:#,0} / {1:#,0}", currentFile, totalCount);
-                        item.SubItems.Add(groupCount.ToString());
-                        item.Tag = group;
-                        lvwGroupings.Items.Add(item);
-                    }
+            _dupeSet = DuplicateFinder.GetDuplicates(_set);
 
-                    currentFile++;
-                }
+            lvwGroupings.SelectedIndices.Clear();
+            lvwGroupings.VirtualListSize = _dupeSet.Count;
+            lvwGroupings.Invalidate();
 
-                if (lvwGroupings.Items.Count > 0)
-                    lvwGroupings.SelectedIndices.Add(0);
-            }
-            finally
-            {
-                lvwGroupings.EndUpdate();
-            }
+            if (lvwGroupings.IsHandleCreated)
+                SelectFirstGroup();
         }
 
-        private IEnumerable<IGrouping<string, ChecksumFile>> GetDuplicates()
+        private void SelectFirstGroup()
         {
-            return _set.Files
-                .GroupBy(p => p.OriginalChecksum)
-                .Where(p => p
-                    .Where(q => q.IsDeleted == false && !_ignoreExtensions.Contains(Path.GetExtension(q.FileName).ToLower()))
-                    .Count() > 1
-                );
+            if (_dupeSet.Count > 0)
+                lvwGroupings.SelectedIndices.Add(0);
+            else
+                lvwGroupings_SelectedIndexChanged(lvwGroupings, EventArgs.Empty);
+        }
+
+        private void lvwGroupings_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
+        {
+            ListViewItem item = new ListViewItem(string.Format("{0:#,0} / {1:#,0}", e.ItemIndex + 1, _dupeSet.Count));
+            item.SubItems.Add(_dupeSet[e.ItemIndex].Count.ToString());
+            e.Item = item;
+        }
+
+        private List<ChecksumFile> SelectedGroup
+        {
+            get { return lvwGroupings.SelectedIndices.Count == 1 ? _dupeSet[lvwGroupings.SelectedIndices[0]] : null; }
         }
 
         private void btnOK_Click(object sender, EventArgs e)
@@ -122,10 +111,10 @@ namespace TaoSFV
             lvwBadDirectories.Items.Clear();
             btnRemoveDuplicates.Enabled = false;
 
-            if (lvwGroupings.SelectedItems.Count == 1)
+            List<ChecksumFile> group = SelectedGroup;
+            if (group != null)
             {
-                IGrouping<string, ChecksumFile> group = (IGrouping<string, ChecksumFile>)lvwGroupings.SelectedItems[0].Tag;
-                foreach (ChecksumFile file in group.Where(p => p.IsDeleted == false))
+                foreach (ChecksumFile file in DuplicateFinder.Remaining(group))
                 {
                     ListViewItem item = new ListViewItem();
                     item.Text = file.FileName;
@@ -155,40 +144,18 @@ namespace TaoSFV
 
                     ListViewGroup group = new ListViewGroup(file.FileName);
 
+                    // the other copy's folders, up to (not including) one the kept file is also in
                     string dir = Path.GetDirectoryName(file.FileName);
                     while (!string.IsNullOrEmpty(dir))
                     {
-                        ListViewItem badDirItem = new ListViewItem();
                         string dirWithSlash = dir + @"\";
-                        badDirItem.Text = dirWithSlash;
-                        badDirItem.Group = group;
-
-                        if (selectedItem.Text.StartsWith(dirWithSlash))
+                        if (selectedItem.Text.StartsWith(dirWithSlash, StringComparison.OrdinalIgnoreCase))
                             break;
 
-                        int dirRemoveCount = 0;
-                        foreach (IGrouping<string, ChecksumFile> checkGroup in _dupeSet)
-                        {
-                            int checkGroupCount = checkGroup.Where(p => p.IsDeleted == false).Count();
-                            if (checkGroupCount > 1)
-                            {
-                                int startsWithCount = 0;
-                                foreach (ChecksumFile checkFile in checkGroup.Where(p => p.IsDeleted == false))
-                                {
-                                    // see if any files start with dir
-                                    if (checkFile.FileName.StartsWith(dirWithSlash))
-                                        startsWithCount++;
-                                }
-
-                                // if all files start with 'dir' we can't proceed
-                                if (startsWithCount != checkGroupCount)
-                                {
-                                    dirRemoveCount += startsWithCount;
-                                }
-                            }
-                        }
-                        badDirItem.SubItems.Add(string.Format("{0:#,0}", dirRemoveCount));
-
+                        ListViewItem badDirItem = new ListViewItem();
+                        badDirItem.Text = dirWithSlash;
+                        badDirItem.Group = group;
+                        badDirItem.SubItems.Add(string.Format("{0:#,0}", DuplicateFinder.GetDeletableIn(_dupeSet, dirWithSlash).Count));
                         lvwBadDirectories.Items.Add(badDirItem);
 
                         dir = Path.GetDirectoryName(dir);
@@ -219,7 +186,7 @@ namespace TaoSFV
             ListViewItem selectedItem = lvwDuplicateFiles.SelectedItems[0];
             ChecksumFile file = (ChecksumFile)selectedItem.Tag;
 
-            string sourceFullPath = Path.Combine(file.Set.Directory, file.FileName);
+            string sourceFullPath = Path.Combine(_set.Directory, file.FileName);
             if (!File.Exists(sourceFullPath))
             {
                 MessageBox.Show(
@@ -236,87 +203,77 @@ namespace TaoSFV
             if (res != DialogResult.Yes)
                 return;
 
-            Cursor.Current = Cursors.WaitCursor;
-            IGrouping<string, ChecksumFile> group = (IGrouping<string, ChecksumFile>)lvwGroupings.SelectedItems[0].Tag;
-            List<ChecksumFile> groupList = new List<ChecksumFile>(group);
-            for (int i = 0; i < groupList.Count; i++)
-            {
-                ChecksumFile removeFile = groupList[i];
-                if (string.Compare(removeFile.FileName, file.FileName, true) == 0)
-                    continue;
+            List<string> failed = new List<string>();
 
-                string fullPath = Path.Combine(file.Set.Directory, removeFile.FileName);
-                if (File.Exists(fullPath))
-                    Program.SafeDelete(fullPath);
-                removeFile.IsDeleted = true;
-            }
+            Cursor.Current = Cursors.WaitCursor;
+            List<ChecksumFile> group = SelectedGroup;
+            DeleteFiles(DuplicateFinder.Remaining(group).Where(p => p != file), failed);
             Cursor.Current = Cursors.Default;
 
             foreach (ListViewItem badDirItem in lvwBadDirectories.SelectedItems)
             {
-                Cursor.Current = Cursors.WaitCursor;
                 string dir = badDirItem.Text;
+                List<ChecksumFile> deleteFiles = DuplicateFinder.GetDeletableIn(_dupeSet, dir);
+                if (deleteFiles.Count == 0)
+                    continue;
 
-                List<ChecksumFile> deleteFiles = new List<ChecksumFile>();
-                foreach (IGrouping<string, ChecksumFile> checkGroup in _dupeSet)
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine(string.Format(lang.ConfirmDelete_Message, deleteFiles.Count, dir));
+                if (deleteFiles.Count <= 50)
                 {
-                    int checkGroupCount = checkGroup.Where(p => p.IsDeleted == false).Count();
-                    if (checkGroupCount > 1)
-                    {
-                        int startsWithCount = 0;
-                        foreach (ChecksumFile checkFile in checkGroup.Where(p => p.IsDeleted == false))
-                        {
-                            // see if any files start with dir
-                            if (checkFile.FileName.StartsWith(dir))
-                                startsWithCount++;
-                        }
-
-                        // if all files start with 'dir' we can't proceed
-                        if (startsWithCount != checkGroupCount)
-                        {
-                            foreach (ChecksumFile checkFile in checkGroup.Where(p => p.IsDeleted == false))
-                            {
-                                // see if any files start with dir
-                                if (checkFile.FileName.StartsWith(dir))
-                                    deleteFiles.Add(checkFile);
-                            }
-                        }
-                    }
+                    sb.AppendLine();
+                    sb.AppendLine(lang.ConfirmDelete_Message_FileListHeader);
+                    sb.AppendLine();
+                    foreach (ChecksumFile deleteFile in deleteFiles)
+                        sb.AppendLine(deleteFile.FileName);
                 }
 
-                if (deleteFiles.Count > 0)
+                DialogResult res2 = MessageBox.Show(sb.ToString(), lang.ConfirmDelete_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (res2 == DialogResult.Yes)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    sb.AppendLine(string.Format(lang.ConfirmDelete_Message, deleteFiles.Count, dir));
-                    if (deleteFiles.Count <= 50)
-                    {
-                        sb.AppendLine();
-                        sb.AppendLine(lang.ConfirmDelete_Message_FileListHeader);
-                        sb.AppendLine();
-                        foreach (ChecksumFile deleteFile in deleteFiles)
-                            sb.AppendLine(deleteFile.FileName);
-                    }
-
+                    Cursor.Current = Cursors.WaitCursor;
+                    DeleteFiles(deleteFiles, failed);
                     Cursor.Current = Cursors.Default;
-                    DialogResult res2 = MessageBox.Show(sb.ToString(), lang.ConfirmDelete_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                    if (res2 == DialogResult.Yes)
-                    {
-                        Cursor.Current = Cursors.WaitCursor;
-                        foreach (ChecksumFile removeFile in deleteFiles)
-                        {
-                            string fullPath = Path.Combine(file.Set.Directory, removeFile.FileName);
-                            if (File.Exists(fullPath))
-                                Program.SafeDelete(fullPath);
-                            removeFile.IsDeleted = true;
-                        }
-                        Cursor.Current = Cursors.Default;
-                    }
                 }
+            }
+
+            if (failed.Count != 0)
+            {
+                string list = string.Join(Environment.NewLine, failed.Take(10));
+                if (failed.Count > 10)
+                    list += Environment.NewLine + "...";
+                MessageBox.Show(string.Format(lang.DeleteFailed_Message, failed.Count, list), lang.ConfirmDelete_Title,
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
             Cursor.Current = Cursors.WaitCursor;
             RebuildGroupings();
             Cursor.Current = Cursors.Default;
+        }
+
+        /// <summary>
+        /// Deletes the files (Recycle Bin per Preferences) and marks them deleted. One that couldn't be deleted stays
+        /// in the checksum file and is added to `failed` with the reason.
+        /// </summary>
+        private void DeleteFiles(IEnumerable<ChecksumFile> files, List<string> failed)
+        {
+            foreach (ChecksumFile removeFile in files.ToList())
+            {
+                string fullPath = Path.Combine(_set.Directory, removeFile.FileName);
+                try
+                {
+                    if (File.Exists(fullPath) && !Program.SafeDelete(fullPath))
+                    {
+                        failed.Add(fullPath + Environment.NewLine + "    " + Language.RemoveDuplicatesForm.NotRecycled);
+                        continue;
+                    }
+                    removeFile.IsDeleted = true;
+                }
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+                {
+                    failed.Add(fullPath + Environment.NewLine + "    " + ex.Message);
+                }
+            }
         }
 
         private void RemoveDuplicatesForm_FormClosing(object sender, FormClosingEventArgs e)

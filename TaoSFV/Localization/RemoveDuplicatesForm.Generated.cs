@@ -52,5 +52,11 @@ namespace TaoSFV.Localization
 
         ///<summary>Rewrite Checksum File</summary>
         public string RewriteChecksum_Title { get; set; }
+
+        ///<summary>{0:#,0} file(s) couldn't be deleted and stay in the checksum file:\n\n{1}</summary>
+        public string DeleteFailed_Message { get; set; }
+
+        ///<summary>The Recycle Bin wouldn't take it (it can't hold paths of 260 characters or more).</summary>
+        public string NotRecycled { get; set; }
     }
 }

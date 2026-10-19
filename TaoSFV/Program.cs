@@ -366,23 +366,28 @@ namespace TaoSFV
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
 
-        public static void SafeDelete(string fileName)
+        public static bool SafeDelete(string fileName)
         {
-            SafeDelete(fileName, Settings.Check.UseRecyleBin);
+            return SafeDelete(fileName, Settings.Check.UseRecyleBin);
         }
 
-        public static void SafeDelete(string fileName, bool useRecycleBin)
+        /// <summary>
+        /// Deletes a file, or moves it to the Recycle Bin. Returns false if the Recycle Bin wouldn't take it; the file
+        /// is then left in place rather than deleted permanently. Throws if a permanent delete fails.
+        /// </summary>
+        public static bool SafeDelete(string fileName, bool useRecycleBin)
         {
-            if (useRecycleBin)
-            {
-                // a file the Recycle Bin won't take is left in place rather than deleted permanently
-                if (!RecycleBin.Recycle(fileName))
-                    Trace.WriteLine(string.Format("Couldn't move {0} to the Recycle Bin", fileName));
-            }
-            else
+            if (!useRecycleBin)
             {
                 File.Delete(fileName);
+                return true;
             }
+
+            if (RecycleBin.Recycle(fileName))
+                return true;
+
+            Trace.WriteLine(string.Format("Couldn't move {0} to the Recycle Bin", fileName));
+            return false;
         }
 
         enum RegWow64Options

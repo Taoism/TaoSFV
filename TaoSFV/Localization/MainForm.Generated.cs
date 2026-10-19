@@ -296,6 +296,12 @@ namespace TaoSFV.Localization
         ///<summary>{0:#,0} file(s) renamed.</summary>
         public string TruncateFileNames_FilesRenamed_Message { get; set; }
 
+        ///<summary>{0:#,0} file(s) couldn't be renamed:\n\n{1}</summary>
+        public string TruncateFileNames_NotRenamed_Message { get; set; }
+
+        ///<summary>The extension leaves no room for a shorter name.</summary>
+        public string TruncateFileNames_NoRoom { get; set; }
+
         ///<summary>Select a Folder</summary>
         public string FolderBrowseDialog_Title { get; set; }
     }

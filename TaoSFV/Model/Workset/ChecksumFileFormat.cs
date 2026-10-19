@@ -17,6 +17,13 @@ namespace TaoSFV.Model.Workset
 		private static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
 		private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(false);
 
+		static ChecksumFileFormat()
+		{
+			// .NET only has Windows-1252 once the code pages provider is registered; the apps do this at startup
+			// too, but anything else using this class (tools, test harnesses) would otherwise fail to write
+			Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+		}
+
 		private static Encoding Legacy
 		{
 			get { return Encoding.GetEncoding(LegacyCodePage); }

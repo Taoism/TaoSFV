@@ -22,8 +22,10 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       recycle from there (restoring would then put them in that folder).
 - [x] **Unreadable files inflate the speed figure.** Their full size is counted as processed, so MB/s and the
       "MB checked" statistic are overstated when files can't be read.
-- [ ] **Re-test Remove Duplicates and Truncate File Names.** Not exercised since the .NET 10 port; Remove Duplicates
+- [x] **Re-test Remove Duplicates and Truncate File Names.** Not exercised since the .NET 10 port; Remove Duplicates
       also still builds real ListView rows (slow for big lists on this machine, see the virtual list change).
+      (Done: logic moved to `DuplicateFinder` / `FileNameTruncator` with tests; fixed crashes and the groups list
+      is virtual. Truncate still doesn't update checksum files that list the renamed files.)
 
 ## Features
 

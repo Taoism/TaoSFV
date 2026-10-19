@@ -2492,7 +2492,7 @@ export results to text file
             if (!int.TryParse(strMaxLength, out maxLength))
                 return;
 
-            if (maxLength < 12)
+            if (maxLength < FileNameTruncator.MinimumLength)
             {
                 MessageBox.Show(Language.MainForm.TruncateFileNames_MinimumLengthIs12, "", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
@@ -2501,38 +2501,31 @@ export results to text file
             if (folderBrowserDialog1.ShowDialog() != DialogResult.OK)
                 return;
 
-            string path = folderBrowserDialog1.SelectedPath;
-
-            Dictionary<string, List<string>> dict = GetFilesAllDirectories(path);
-
             SetStatusText(Language.MainForm.Status_LookingForLongFileNames);
-
-            int count = 0;
-            foreach (KeyValuePair<string, List<string>> kvp in dict)
+            TruncateResult result;
+            Cursor.Current = Cursors.WaitCursor;
+            try
             {
-                foreach (string fullPath in kvp.Value)
-                {
-                    string fileName = Path.GetFileName(fullPath);
-                    if (fileName.Length > maxLength)
-                    {
-                        string ext = Path.GetExtension(fileName);
-                        string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
-                        int newLength = maxLength - ext.Length;
-                        nameWithoutExt = nameWithoutExt.Substring(0, newLength);
-                        string newName = nameWithoutExt + ext;
-                        string newFullPath = Path.Combine(kvp.Key, newName);
-
-                        SetStatusText(string.Format(Language.MainForm.Status_Renaming, fileName, newName));
-
-                        File.Move(fullPath, newFullPath);
-                        count++;
-                    }
-                }
+                result = FileNameTruncator.Truncate(folderBrowserDialog1.SelectedPath, maxLength, null);
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
+                SetStatusText(Language.MainForm.Status_Ready);
             }
 
-            SetStatusText(Language.MainForm.Status_Ready);
+            string message = string.Format(Language.MainForm.TruncateFileNames_FilesRenamed_Message, result.Renamed);
+            if (result.NotRenamed.Count != 0)
+            {
+                string list = string.Join(Environment.NewLine, result.NotRenamed.Take(10).Select(p =>
+                    p.Key + Environment.NewLine + "    " + (p.Value ?? Language.MainForm.TruncateFileNames_NoRoom)));
+                if (result.NotRenamed.Count > 10)
+                    list += Environment.NewLine + "...";
+                message += Environment.NewLine + Environment.NewLine +
+                    string.Format(Language.MainForm.TruncateFileNames_NotRenamed_Message, result.NotRenamed.Count, list);
+            }
 
-            MessageBox.Show(string.Format(Language.MainForm.TruncateFileNames_FilesRenamed_Message, count), "", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(message, "", MessageBoxButtons.OK, result.NotRenamed.Count == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
         }
 
         private void SetLanguage()
