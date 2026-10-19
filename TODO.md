@@ -7,9 +7,12 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 - [x] **Friendly message for a bad checksum file.** Opening a single malformed `.sfv`/`.md5` shows the crash dialog
       ("An error has occurred", stack trace, Report bug). It should be a plain message naming the file and line.
       Folder checks already skip such files and list them.
-- [ ] **Load folders in the background.** Verifying a big tree (e.g. 1,831 sets) scans folders and reads every
+- [x] **Load folders in the background.** Verifying a big tree (e.g. 1,831 sets) scans folders and reads every
       checksum file on the UI thread, pumping events (`Application.DoEvents`, 12 places), so the window stutters
-      before checking starts.
+      before checking starts. (Done for opening/verifying; Create still gathers its file list with `DoEvents`.)
+- [ ] **Per-set overhead when checking.** Each set costs ~90 ms even when its files are all missing (2,000 such
+      sets: 3 minutes): the result loop in `ProcessFilesAsync` polls every 50 ms, and with Find Renamed Files on,
+      `_files_missing` is a run total, so every set after the first with a missing file is searched for renames.
 - [ ] **Dead update check.** Preferences still offers "Check for updates every N days" and the code calls the
       defunct cdtag.com. Either remove it or point it at GitHub Releases (needs the repo below).
 - [ ] **Recycle Bin with long paths.** Now uses `IFileOperation` (`Tools/RecycleBin.cs`), but switching didn't

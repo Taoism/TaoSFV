@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -305,37 +305,15 @@ export results to text file
             }
         }
 
-        private void LoadNewSets()
+        /// <summary>Adds checksum files and folders opened while checking, so the run checks them too.</summary>
+        private async Task LoadNewSetsAsync()
         {
-            if (InvokeRequired)
-            {
-                Invoke(new System.Windows.Forms.MethodInvoker(LoadNewSets));
-            }
-            else
-            {
-                List<string> newSets;
-                lock (_newSets)
-                {
-                    if (_newSets.Count == 0)
-                        return;
+            List<string> newSets = TakeNewSets();
+            if (newSets.Count == 0)
+                return;
 
-                    Activate();
-
-                    newSets = new List<string>(_newSets);
-                    _newSets.Clear();
-                }
-
-                ListViewBeginUpdate();
-                try
-                {
-                    foreach (string set in newSets)
-                        LoadAndVerifyFile(set, Program.Settings.Check.AutoVerify, true);
-                }
-                finally
-                {
-                    ListViewEndUpdate();
-                }
-            }
+            Activate();
+            await LoadSetsAsync(newSets);
         }
 
         private void _timer_Tick(object sender, EventArgs e)
@@ -801,145 +779,161 @@ export results to text file
             EngageDropTimer(fileNames);
         }
 
-        public bool LoadAndVerifyFile(string fileName, bool doVerify, bool getFileInfo)
-        {
-            if (Directory.Exists(fileName))
-            {
-                List<string> verifyFiles = new List<string>();
-                Dictionary<string, List<string>> dict = GetFilesAllDirectories(fileName);
-                foreach (List<string> dirFiles in dict.Values)
-                {
-                    foreach (string dirFile in dirFiles)
-                    {
-                        if (ChecksumAlgorithm.IsChecksumFile(dirFile))
-                            verifyFiles.Add(dirFile);
-                    }
-                }
+        private CancellationTokenSource _loadCancel;
 
-                // one unreadable checksum file shouldn't stop a folder check: skip it and say so at the end
-                List<string> skipped = new List<string>();
-                ListViewBeginUpdate();
+        /// <summary>
+        /// Reads checksum files and folders on the thread pool and appends their sets to the list, so a big folder
+        /// doesn't freeze the window. Skipped checksum files are listed at the end. Returns false if stopped.
+        /// </summary>
+        private async Task<bool> LoadSetsAsync(List<string> paths)
+        {
+            _loadCancel = new CancellationTokenSource();
+            CancellationToken cancel = _loadCancel.Token;
+
+            // the status bar is updated at most 10 times a second however many files there are
+            long nextStatus = 0;
+            Action<string> loading = path =>
+            {
+                long now = Environment.TickCount64;
+                if (now < Interlocked.Read(ref nextStatus))
+                    return;
+                Interlocked.Exchange(ref nextStatus, now + 100);
                 try
                 {
-                    foreach (string verifyFile in verifyFiles)
+                    BeginInvoke(new Action(() =>
                     {
-                        try
-                        {
-                            LoadAndVerifyChecksumFile(verifyFile, doVerify, getFileInfo);
-                        }
-                        catch (Exception ex) when (ex is InvalidChecksumFileException || ex is IOException || ex is UnauthorizedAccessException)
-                        {
-                            Trace.WriteLine(ex);
-                            skipped.Add(verifyFile + Environment.NewLine + "    " + FirstLine(ex.Message));
-                        }
-                    }
+                        if (_loadCancel != null && !IsDisposed)
+                            SetStatusText(string.Format(Language.MainForm.Status_LoadingFile, path));
+                    }));
                 }
-                finally
+                catch (InvalidOperationException)
                 {
-                    ListViewEndUpdate();
+                    // the window is closing
                 }
+            };
 
-                if (skipped.Count != 0)
-                {
-                    string list = string.Join(Environment.NewLine, skipped.Take(10));
-                    if (skipped.Count > 10)
-                        list += Environment.NewLine + "...";
-                    MessageBox.Show(this, string.Format(Language.MainForm.SkippedChecksumFiles_Message, skipped.Count, list),
-                        Language.MainForm.SkippedChecksumFiles_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-
-                return true;
-            }
-
-            if (!File.Exists(fileName))
-            {
-                MessageBox.Show(string.Format(Language.MainForm.FileNotFound_Message, fileName), Language.MainForm.FileNotFound_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return false;
-            }
-
-            if (!ChecksumAlgorithm.IsChecksumFile(fileName))
-                return false;
-
-            // a malformed or locked checksum file is the user's problem to fix, not a crash to report
+            LoadResult loaded;
             try
             {
-                return LoadAndVerifyChecksumFile(fileName, doVerify, getFileInfo);
+                SetStatusText(Language.MainForm.Status_GettingFileList);
+                loaded = await Task.Run(() => ChecksumSetLoader.LoadAll(paths, loading, cancel));
             }
-            catch (InvalidChecksumFileException ex)
+            catch (OperationCanceledException)
             {
-                Trace.WriteLine(ex);
-                SetStatusText(Language.MainForm.Status_Ready);
-                MessageBox.Show(this, string.Format(Language.MainForm.FileContentsNotRecognized, fileName, ex.ChecksumType, ex.Message),
-                    Language.MainForm.UnreadableChecksumFile_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            finally
             {
-                Trace.WriteLine(ex);
-                SetStatusText(Language.MainForm.Status_Ready);
-                MessageBox.Show(this, string.Format(Language.MainForm.UnreadableChecksumFile_Message, fileName, ex.Message),
-                    Language.MainForm.UnreadableChecksumFile_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return false;
+                _loadCancel.Dispose();
+                _loadCancel = null;
             }
-        }
 
-        // loads one checksum file; throws for a file that can't be read or parsed
-        private bool LoadAndVerifyChecksumFile(string fileName, bool doVerify, bool getFileInfo)
-        {
-            SetStatusText(string.Format(Language.MainForm.Status_LoadingFile, fileName));
-            Application.DoEvents();
-
-            ChecksumSet set = ChecksumSetLoader.Parse(fileName);
-
-            Program.Settings.AddRecentFile(fileName);
+            if (IsDisposed)
+                return false;
 
             ListViewBeginUpdate();
             try
             {
-                if (!_workingOnList)
+                foreach (ChecksumSet set in loaded.Sets)
                 {
-                    ClearFileItems();
-                    Application.DoEvents();
+                    AppendSetRows(set);
+                    _totalSizeOfSets += set.TotalSize;
+                    _files_parts += set.Files.Count;
+                    _sets.Add(set);
                 }
-
-                AddSetRows(set);
+                ShowRows();
             }
             finally
             {
                 ListViewEndUpdate();
             }
+            UpdateStatusBar();
 
-            if (!_workingOnList)
+            HashSet<string> skippedPaths = new HashSet<string>(loaded.Skipped.Select(p => p.Path), StringComparer.OrdinalIgnoreCase);
+            foreach (string path in paths)
             {
-                _totalSizeOfSets = 0;
-                _files_parts = 0;
-                _sets.Clear();
+                if (!skippedPaths.Contains(path) && (Directory.Exists(path) || ChecksumAlgorithm.IsChecksumFile(path)))
+                    Program.Settings.AddRecentFile(path);
             }
 
-            if (getFileInfo)
-            {
-                int lastPercent = 0;
-                ChecksumSetLoader.ResolveFiles(set, percent =>
-                {
-                    if (percent / 5 > lastPercent / 5)
-                    {
-                        SetStatusText(string.Format(Language.MainForm.Status_LoadingFilePercentage, set.VerificationFileName, (percent / 5) * 5));
-                        Application.DoEvents();
-
-                        lastPercent = percent;
-                    }
-                });
-            }
-
-            _totalSizeOfSets += set.TotalSize;
-            _files_parts += set.Files.Count;
-
-            _sets.Add(set);
-
-            if (!_workingOnList && doVerify)
-                Verify();
-
+            ShowSkipped(loaded.Skipped);
             return true;
+        }
+
+        /// <summary>
+        /// Says which checksum files couldn't be loaded: one opened on its own gets its own message, anything more
+        /// a list. A bad checksum file is the user's problem to fix, not a crash to report.
+        /// </summary>
+        private void ShowSkipped(List<SkippedChecksumFile> skipped)
+        {
+            foreach (SkippedChecksumFile file in skipped)
+                Trace.WriteLine(file.Path + ": " + file.Error);
+
+            if (skipped.Count == 0)
+                return;
+
+            if (skipped.Count == 1 && !skipped[0].InFolder)
+            {
+                SkippedChecksumFile file = skipped[0];
+                InvalidChecksumFileException invalid = file.Error as InvalidChecksumFileException;
+                if (invalid != null)
+                    MessageBox.Show(this, string.Format(Language.MainForm.FileContentsNotRecognized, file.Path, invalid.ChecksumType, invalid.Message),
+                        Language.MainForm.UnreadableChecksumFile_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                else if (file.Error is FileNotFoundException)
+                    MessageBox.Show(this, string.Format(Language.MainForm.FileNotFound_Message, file.Path),
+                        Language.MainForm.FileNotFound_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                else
+                    MessageBox.Show(this, string.Format(Language.MainForm.UnreadableChecksumFile_Message, file.Path, file.Error.Message),
+                        Language.MainForm.UnreadableChecksumFile_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string list = string.Join(Environment.NewLine, skipped.Take(10).Select(p => p.Path + Environment.NewLine + "    " +
+                (p.Error is FileNotFoundException ? Language.MainForm.FileNotFound_Title : FirstLine(p.Error.Message))));
+            if (skipped.Count > 10)
+                list += Environment.NewLine + "...";
+            MessageBox.Show(this, string.Format(Language.MainForm.SkippedChecksumFiles_Message, skipped.Count, list),
+                Language.MainForm.SkippedChecksumFiles_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        /// <summary>Replaces the list with one checksum file, without checking it (for Find Duplicate Files).</summary>
+        private bool LoadSingleFile(string fileName)
+        {
+            LoadResult loaded;
+            Cursor.Current = Cursors.WaitCursor;
+            try
+            {
+                loaded = ChecksumSetLoader.LoadAll(new[] { fileName }, null, CancellationToken.None);
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
+            }
+
+            ShowSkipped(loaded.Skipped);
+            if (loaded.Sets.Count != 1)
+                return false;
+
+            ChecksumSet set = loaded.Sets[0];
+            Program.Settings.AddRecentFile(fileName);
+
+            ClearFileItems();
+            _sets.Clear();
+            _sets.Add(set);
+            _totalSizeOfSets = set.TotalSize;
+            _files_parts = set.Files.Count;
+            AddSetRows(set);
+            return true;
+        }
+
+        private List<string> TakeNewSets()
+        {
+            lock (_newSets)
+            {
+                List<string> newSets = new List<string>(_newSets);
+                _newSets.Clear();
+                return newSets;
+            }
         }
 
         private void btnRightPane_Click(object sender, EventArgs e)
@@ -1100,7 +1094,7 @@ export results to text file
                     if (_queueHideGood)
                         ApplyHideGood();
 
-                    LoadNewSets();
+                    await LoadNewSetsAsync();
                 }
 
                 progressTimer.Stop();
@@ -1254,7 +1248,6 @@ export results to text file
 
                 if (_queueHideGood)
                     ApplyHideGood();
-                LoadNewSets();
 
                 await Task.Delay(50);
             }
@@ -1356,7 +1349,6 @@ export results to text file
         private void AppendSetRows(ChecksumSet set)
         {
             _rows.Add(new FileRow { Set = set });
-            MeasureFileName(Path.GetFileName(set.VerificationFileName), true);
 
             bool hideGood = Program.Settings.General.HideGoodFiles;
             foreach (ChecksumFile file in set.Files)
@@ -1366,7 +1358,6 @@ export results to text file
 
                 _rowIndex[file] = _rows.Count;
                 _rows.Add(new FileRow { Set = set, File = file });
-                MeasureFileName(file.FileName, false);
             }
         }
 
@@ -1375,19 +1366,21 @@ export results to text file
         {
             // sets already shown, in order, plus any queued sets not shown yet
             List<ChecksumSet> sets = new List<ChecksumSet>();
+            HashSet<ChecksumSet> shown = new HashSet<ChecksumSet>();
             foreach (FileRow row in _rows)
             {
-                if (row.File == null)
+                if (row.File == null && shown.Add(row.Set))
                     sets.Add(row.Set);
             }
             foreach (ChecksumSet set in _sets)
             {
-                if (!sets.Contains(set))
+                if (shown.Add(set))
                     sets.Add(set);
             }
 
             _rows.Clear();
             _rowIndex.Clear();
+            _measuredRows = 0;
             foreach (ChecksumSet set in sets)
                 AppendSetRows(set);
             ShowRows();
@@ -1397,25 +1390,63 @@ export results to text file
         {
             _rows.Clear();
             _rowIndex.Clear();
+            _measuredRows = 0;
             _fileNameColumnWidth = 0;
             ShowRows();
         }
 
         private void ShowRows()
         {
+            MeasureNewRows();
             lvwFiles.VirtualListSize = _rows.Count;
             lvwFiles.Invalidate();
             if (_rows.Count != 0 && lvwFiles.Columns[0].Width != _fileNameColumnWidth)
                 lvwFiles.Columns[0].Width = _fileNameColumnWidth;
         }
 
-        private void MeasureFileName(string text, bool header)
+        // rows before this have been measured for the file name column's width
+        private int _measuredRows;
+
+        // the most names of each kind measured per batch
+        private const int MeasuredNames = 50;
+
+        /// <summary>
+        /// Widens the file name column for rows added since the last call. Measuring every name took seconds for
+        /// 80,000 rows, so only the longest few are measured: in practice the widest name is among them.
+        /// </summary>
+        private void MeasureNewRows()
         {
+            if (_measuredRows >= _rows.Count)
+                return;
+
+            List<string> headers = new List<string>();
+            List<string> names = new List<string>();
+            for (int i = _measuredRows; i < _rows.Count; i++)
+            {
+                FileRow row = _rows[i];
+                if (row.File == null)
+                    headers.Add(Path.GetFileName(row.Set.VerificationFileName));
+                else
+                    names.Add(row.File.FileName);
+            }
+            _measuredRows = _rows.Count;
+
             if (_headerFont == null)
                 _headerFont = new Font(lvwFiles.Font, FontStyle.Bold);
 
+            using (Graphics graphics = lvwFiles.CreateGraphics())
+            {
+                foreach (string header in headers.OrderByDescending(p => p.Length).Take(MeasuredNames))
+                    MeasureFileName(graphics, header, _headerFont);
+                foreach (string name in names.OrderByDescending(p => p.Length).Take(MeasuredNames))
+                    MeasureFileName(graphics, name, lvwFiles.Font);
+            }
+        }
+
+        private void MeasureFileName(Graphics graphics, string text, Font font)
+        {
             // room for the state icon and some padding
-            int width = TextRenderer.MeasureText(text, header ? _headerFont : lvwFiles.Font).Width + 32;
+            int width = TextRenderer.MeasureText(graphics, text, font).Width + 32;
             if (width > _fileNameColumnWidth)
                 _fileNameColumnWidth = width;
         }
@@ -1486,6 +1517,8 @@ export results to text file
             _queueStop = true;
             if (_verifyCancel != null)
                 _verifyCancel.Cancel();
+            if (_loadCancel != null)
+                _loadCancel.Cancel();
         }
 
         private void UpdateProgressBarsAndText(long bytesProcessed, DateTime start)
@@ -2080,65 +2113,67 @@ export results to text file
             _dropTimer.Enabled = false;
 
             List<string> files = (List<string>)_dropTimer.Tag;
+            if (files.Count == 0)
+                return;
 
             if (_workingOnList)
             {
-                ListViewBeginUpdate();
-                try
-                {
-                    foreach (string path in files)
-                        LoadAndVerifyFile(path, Program.Settings.Check.AutoVerify, true);
-                }
-                finally
-                {
-                    ListViewEndUpdate();
-                }
+                // a run in progress picks these up after its current set; a load in progress, when it finishes
+                lock (_newSets)
+                    _newSets.AddRange(files);
+                return;
             }
-            else if (files.Count > 0)
+
+            _workingOnList = true;
+            try
             {
-                _workingOnList = true;
+                ClearFileItems();
+                _totalSizeOfSets = 0;
+                _files_parts = 0;
+                _sets.Clear();
+
+                progressBar1.Value = 0;
+                progressBar2.Value = 0;
+                _set_index = 0;
+                _files_ok = 0;
+                _files_bad = 0;
+                _files_missing = 0;
+                _files_unreadable = 0;
+                UpdateStatusBar();
+
+                // Go becomes Stop while loading, as while checking
+                btnGo.Text = Language.MainForm.StopButton;
+                ToggleMenuItemsEnabled(false, false);
+                _queueStop = false;
+                bool loaded;
                 try
                 {
-                    ListViewBeginUpdate();
-                    try
+                    do
                     {
-                        ClearFileItems();
-
-                        _totalSizeOfSets = 0;
-                        _files_parts = 0;
-                        _sets.Clear();
-
-                        foreach (string path in files)
-                            LoadAndVerifyFile(path, false, true);
-                    }
-                    finally
-                    {
-                        ListViewEndUpdate();
-                    }
-
-                    if (Program.Settings.Check.AutoVerify)
-                    {
-                        await VerifyAsync();
-                    }
-                    else
-                    {
-                        progressBar1.Value = 0;
-                        progressBar2.Value = 0;
-
-                        _set_index = 0;
-                        _files_ok = 0;
-                        _files_bad = 0;
-                        _files_missing = 0;
-                        _files_unreadable = 0;
-                _files_unreadable = 0;
-
-                        UpdateStatusBar();
-                    }
+                        loaded = await LoadSetsAsync(files);
+                        files = TakeNewSets();
+                    } while (loaded && files.Count != 0);
                 }
                 finally
                 {
-                    _workingOnList = false;
+                    if (!IsDisposed)
+                    {
+                        btnGo.Text = Language.MainForm.GoButton;
+                        ToggleMenuItemsEnabled(true, false);
+                    }
                 }
+
+                if (IsDisposed)
+                    return;
+
+                SetStatusText(Language.MainForm.Status_Ready);
+                if (loaded && Program.Settings.Check.AutoVerify)
+                    await VerifyAsync();
+            }
+            finally
+            {
+                _workingOnList = false;
+                _queueStop = false;
             }
         }
 
@@ -2397,7 +2432,7 @@ export results to text file
                 if (fileNames == null || fileNames.Count != 1)
                     return;
 
-                if (!LoadAndVerifyFile(fileNames[0], false, false))
+                if (!LoadSingleFile(fileNames[0]))
                     return;
 
                 if (_sets.Count != 1)
