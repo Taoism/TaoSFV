@@ -31,6 +31,15 @@ namespace TaoSFV
 			if (textBox != null && textBox.BorderStyle == BorderStyle.Fixed3D)
 				textBox.BorderStyle = BorderStyle.FixedSingle;
 
+			// drop-down lists keep a light gray face in dark mode unless they're flat
+			ComboBox comboBox = control as ComboBox;
+			if (comboBox != null)
+			{
+				comboBox.FlatStyle = FlatStyle.Flat;
+				comboBox.BackColor = Color.Black;
+				comboBox.ForeColor = Color.White;
+			}
+
 			ToolStrip toolStrip = control as ToolStrip;
 			if (toolStrip != null)
 			{
