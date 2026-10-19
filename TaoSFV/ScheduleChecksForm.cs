@@ -112,7 +112,22 @@ namespace TaoSFV
 
 			_frequency.SelectedIndex = (int)CheckFrequency.Weekly;
 			ThemeHelper.Apply(this);
+
+			// pixel sizes set above are for 96 DPI; scale them for this monitor, and again if the window moves
+			ScaleFixedSizes(intro, DeviceDpi / 96f);
+			DpiChanged += (sender, e) => ScaleFixedSizes(intro, (float)e.DeviceDpiNew / e.DeviceDpiOld);
 			Load += (sender, e) => Reload(null);
+		}
+
+		private void ScaleFixedSizes(Label intro, float factor)
+		{
+			if (Math.Abs(factor - 1) < 0.01)
+				return;
+			intro.MaximumSize = new Size((int)(intro.MaximumSize.Width * factor), 0);
+			foreach (ColumnHeader column in _list.Columns)
+				column.Width = (int)(column.Width * factor);
+			_day.Width = (int)(_day.Width * factor);
+			_time.Width = (int)(_time.Width * factor);
 		}
 
 		private static TableLayoutPanel Row(params Control[] controls)

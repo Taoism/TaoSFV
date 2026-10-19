@@ -45,7 +45,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       Unregister, Unreadable, import, skipped files); the other five languages fall back to English. Also drop
       "Try running as Administrator" from their registration error text.
 - [x] **Switch theme without restarting.**
-- [ ] **Sharper text on high-DPI screens.** Windows are laid out in fixed pixels and run system-DPI-aware.
+- [x] **Sharper text on high-DPI screens.** Windows are laid out in fixed pixels and run system-DPI-aware.
 - [ ] **Comments template after importing.** Offer to update a header that still says "ilSFV" or links to
       cdtag.com. (This machine's TaoSFV template says "Using ilSFV" because its database predates the rename.)
 - [x] **Make the README and release notes match the About tab.** About now says "TaoSFV made in tribute to ilSFV

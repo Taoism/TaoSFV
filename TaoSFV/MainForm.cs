@@ -237,6 +237,17 @@ export results to text file
             _timer.Enabled = true;
 
             Load += MainForm_Load;
+
+            // on a monitor with another DPI (at start or after moving), scale the fonts set explicitly in the designer,
+            // which WinForms leaves alone, and measure the file name column again
+            DpiFonts.Track(this, () =>
+            {
+                ResizeStatusBar();
+                _headerFont = null;
+                _measuredRows = 0;
+                _fileNameColumnWidth = 0;
+                ShowRows();
+            }, menuStrip1, statusStrip1, contextMenuStrip1, tabControl1, txtComments, lvwFiles);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -686,7 +697,7 @@ export results to text file
 
             ResizeStatusBar();
 
-            progressBar1.Width = chkHideGood.Left - 16;
+            progressBar1.Width = chkHideGood.Left - LogicalToDeviceUnits(16);
         }
 
         private void SaveFormSizeAndPosition()
@@ -985,7 +996,7 @@ export results to text file
             btnRightPane.Text = show ? "<<" : ">>";
             miCommentResultPane.Checked = show;
 
-            progressBar1.Width = chkHideGood.Left - 16;
+            progressBar1.Width = chkHideGood.Left - LogicalToDeviceUnits(16);
         }
 
         private void miHideGood_Click(object sender, EventArgs e)
@@ -1493,7 +1504,7 @@ export results to text file
         private void MeasureFileName(Graphics graphics, string text, Font font)
         {
             // room for the state icon and some padding
-            int width = TextRenderer.MeasureText(graphics, text, font).Width + 32;
+            int width = TextRenderer.MeasureText(graphics, text, font).Width + LogicalToDeviceUnits(32);
             if (width > _fileNameColumnWidth)
                 _fileNameColumnWidth = width;
         }
@@ -2667,7 +2678,7 @@ export results to text file
 
             Application.DoEvents();
 
-            progressBar1.Width = chkHideGood.Left - 16;
+            progressBar1.Width = chkHideGood.Left - LogicalToDeviceUnits(16);
         }
     }
 }

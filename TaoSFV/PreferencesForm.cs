@@ -17,6 +17,7 @@ namespace TaoSFV
 		{
 			InitializeComponent();
 			ThemeHelper.Apply(this);
+			DpiFonts.Track(this, null, txtExcludeFilesOfType, txtCommentsHeader, txtCommentsFileList, txtCommentsFooter);
 
             SetLanguage();
 

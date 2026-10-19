@@ -65,7 +65,7 @@ namespace TaoSFV
                 if (scheduled)
                 {
                     Application.EnableVisualStyles();
-                    Application.SetHighDpiMode(HighDpiMode.SystemAware);
+                    Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
                     ScheduledCheckRun.Run(args[1]);
                     return;
                 }
@@ -154,7 +154,7 @@ namespace TaoSFV
 
                     Application.EnableVisualStyles();
                     Application.SetCompatibleTextRenderingDefault(false);
-                    Application.SetHighDpiMode(HighDpiMode.SystemAware);
+                    Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
                     ApplyTheme(Settings.General.Theme);
 
                     // first start next to an existing ilSFV: offer its settings once

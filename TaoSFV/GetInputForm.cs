@@ -8,6 +8,25 @@ namespace TaoSFV
 		private GetInputForm()
 		{
 			InitializeComponent();
+
+			// buttons anchored to the corner landed on top of each other when the form was rescaled for a monitor
+			// with another DPI; a right-to-left flow along the bottom keeps them apart
+			FlowLayoutPanel buttons = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Bottom,
+				FlowDirection = FlowDirection.RightToLeft,
+				AutoSize = true,
+				WrapContents = false,
+				Padding = new Padding(9, 0, 9, 9)
+			};
+			Controls.Remove(btnOK);
+			Controls.Remove(btnCancel);
+			btnOK.Anchor = AnchorStyles.None;
+			btnCancel.Anchor = AnchorStyles.None;
+			buttons.Controls.Add(btnCancel);
+			buttons.Controls.Add(btnOK);
+			Controls.Add(buttons);
+
 			ThemeHelper.Apply(this);
 
             btnOK.Text = Language.General.OKButton;

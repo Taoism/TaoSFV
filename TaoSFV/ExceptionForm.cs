@@ -24,6 +24,7 @@ namespace TaoSFV
 		{
 			InitializeComponent();
 			ThemeHelper.Apply(this);
+			DpiFonts.Track(this, null, lblMainLabel);
 
 			if (isTopMost)
 			{

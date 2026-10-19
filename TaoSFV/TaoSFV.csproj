@@ -8,7 +8,7 @@
     <AssemblyName>TaoSFV</AssemblyName>
     <ApplicationIcon>TaoSFV.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationVisualStyles>true</ApplicationVisualStyles>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
