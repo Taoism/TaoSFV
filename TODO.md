@@ -30,7 +30,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 
 - [ ] **Scheduled checks.** "Schedule weekly check..." that sets up Task Scheduler with `taosfv-cli verify <folder>`
       and only notifies when something fails.
-- [ ] **Save results.** Export a run's results as text, CSV or HTML.
+- [x] **Save results.** Export a run's results as text, CSV or HTML.
 - [x] **Parallel reads setting.** Preferences option to override the automatic choice (4 on SSDs, 1 on hard
       drives/shares), e.g. for RAID arrays or slow USB sticks. The CLI already has `--threads`.
 - [ ] **Faster hash types.** XXH3 and/or BLAKE3 as options for large libraries (less widely supported elsewhere).

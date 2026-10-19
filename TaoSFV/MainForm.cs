@@ -770,6 +770,45 @@ export results to text file
             }
         }
 
+        private void miSaveResults_Click(object sender, EventArgs e)
+        {
+            // the shortcut works with the menu closed, so check here too
+            if (_sets.Count == 0 || _workingOnList)
+                return;
+
+            var p = Language.MainForm;
+            string fileName;
+            using (SaveFileDialog dialog = new SaveFileDialog())
+            {
+                dialog.Filter = p.SaveResults_Filter;
+                dialog.FileName = Path.GetFileNameWithoutExtension(_sets[0].VerificationFileName) + " results";
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return;
+                fileName = dialog.FileName;
+            }
+
+            ResultsText text = new ResultsText
+            {
+                Title = p.SaveResults_Title,
+                Summary = p.SaveResults_Summary,
+                BadDetail = p.SaveResults_BadDetail
+            };
+            text.States[ChecksumFileState.NotProcessed] = p.SaveResults_NotChecked;
+            text.States[ChecksumFileState.OK] = p.SaveResults_OK;
+            text.States[ChecksumFileState.Bad] = p.SaveResults_Bad;
+            text.States[ChecksumFileState.Missing] = p.SaveResults_Missing;
+            text.States[ChecksumFileState.Unreadable] = p.SaveResults_Unreadable;
+
+            try
+            {
+                ResultsExporter.Save(fileName, _sets, text, DateTime.Now);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                MessageBox.Show(this, ex.Message, Language.General.Error, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
         private void miOpen_Click(object sender, EventArgs e)
         {
             List<string> fileNames = GetChecksumFiles(true);
@@ -2210,6 +2249,8 @@ export results to text file
 
         private void mnuFile_DropDownOpening(object sender, EventArgs e)
         {
+            miSaveResults.Enabled = _sets.Count != 0 && !_workingOnList;
+
             List<string> paths = Program.Settings.GetRecentFiles().ToList();
 
             miDocumentSeparator.Visible = false;
@@ -2572,6 +2613,7 @@ export results to text file
             miNewSHA512.Text = p.Menu_File_NewSHA512File;
             miOpen.Text = p.Menu_File_Open;
             miVerifyFolder.Text = p.Menu_File_VerifyFolder;
+            miSaveResults.Text = p.Menu_File_SaveResults;
             miPreferences.Text = p.Menu_File_Preferences;
             miCheckForUpdates.Text = p.Menu_File_CheckForUpdates;
             miExit.Text = p.Menu_File_Exit;

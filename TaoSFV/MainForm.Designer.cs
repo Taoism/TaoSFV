@@ -40,6 +40,7 @@
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.miOpen = new System.Windows.Forms.ToolStripMenuItem();
             this.miVerifyFolder = new System.Windows.Forms.ToolStripMenuItem();
+            this.miSaveResults = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.miPreferences = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
@@ -141,6 +142,7 @@
             this.toolStripSeparator5,
             this.miOpen,
             this.miVerifyFolder,
+            this.miSaveResults,
             this.toolStripSeparator3,
             this.miPreferences,
             this.toolStripSeparator1,
@@ -215,6 +217,14 @@
             this.miVerifyFolder.Size = new System.Drawing.Size(210, 22);
             this.miVerifyFolder.Text = "Verify &Folder...";
             this.miVerifyFolder.Click += new System.EventHandler(this.miVerifyFolder_Click);
+            // 
+            // miSaveResults
+            // 
+            this.miSaveResults.Name = "miSaveResults";
+            this.miSaveResults.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) | System.Windows.Forms.Keys.S)));
+            this.miSaveResults.Size = new System.Drawing.Size(210, 22);
+            this.miSaveResults.Text = "&Save Results...";
+            this.miSaveResults.Click += new System.EventHandler(this.miSaveResults_Click);
             // 
             // toolStripSeparator3
             // 
@@ -846,6 +856,7 @@
 		private System.Windows.Forms.ToolStripMenuItem mnuHelp;
         private System.Windows.Forms.ToolStripMenuItem miOpen;
         private System.Windows.Forms.ToolStripMenuItem miVerifyFolder;
+        private System.Windows.Forms.ToolStripMenuItem miSaveResults;
         private System.Windows.Forms.ToolStripMenuItem miPreferences;
         private System.Windows.Forms.ToolStripMenuItem miExit;
         private System.Windows.Forms.ToolStripMenuItem miFileOK;

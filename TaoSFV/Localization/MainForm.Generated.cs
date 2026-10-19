@@ -26,6 +26,9 @@ namespace TaoSFV.Localization
         ///<summary>Verify &Folder...</summary>
         public string Menu_File_VerifyFolder { get; set; }
 
+        ///<summary>&Save Results...</summary>
+        public string Menu_File_SaveResults { get; set; }
+
         ///<summary>&Preferences...</summary>
         public string Menu_File_Preferences { get; set; }
 
@@ -268,6 +271,33 @@ namespace TaoSFV.Localization
 
         ///<summary>{0} checksum file(s) couldn't be read and were skipped. The others are checked as usual.\n\n{1}</summary>
         public string SkippedChecksumFiles_Message { get; set; }
+
+        ///<summary>Text file (*.txt)|*.txt|CSV for spreadsheets (*.csv)|*.csv|Web page (*.html)|*.html</summary>
+        public string SaveResults_Filter { get; set; }
+
+        ///<summary>TaoSFV results, {0:yyyy-MM-dd HH:mm}</summary>
+        public string SaveResults_Title { get; set; }
+
+        ///<summary>{0:#,0} files in {1:#,0} sets: {2}</summary>
+        public string SaveResults_Summary { get; set; }
+
+        ///<summary>expected {0}, got {1}</summary>
+        public string SaveResults_BadDetail { get; set; }
+
+        ///<summary>Not checked</summary>
+        public string SaveResults_NotChecked { get; set; }
+
+        ///<summary>OK</summary>
+        public string SaveResults_OK { get; set; }
+
+        ///<summary>Bad</summary>
+        public string SaveResults_Bad { get; set; }
+
+        ///<summary>Missing</summary>
+        public string SaveResults_Missing { get; set; }
+
+        ///<summary>Unreadable</summary>
+        public string SaveResults_Unreadable { get; set; }
 
         ///<summary>Failed Files Not Deleted</summary>
         public string NotRecycled_Title { get; set; }
