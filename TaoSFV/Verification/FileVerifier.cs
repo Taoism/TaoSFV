@@ -85,6 +85,19 @@ namespace TaoSFV.Verification
 			get { return BytesProcessed - Interlocked.Read(ref _skippedBytes); }
 		}
 
+		private readonly ConcurrentQueue<string> _notRecycled = new ConcurrentQueue<string>();
+
+		/// <summary>Failed files that were to be deleted but the Recycle Bin wouldn't take (left in place).</summary>
+		public IReadOnlyCollection<string> NotRecycled
+		{
+			get { return _notRecycled; }
+		}
+
+		internal void AddNotRecycled(string fileName)
+		{
+			_notRecycled.Enqueue(fileName);
+		}
+
 		/// <summary>Fraction (0-1) of a file in progress, or null if it isn't being read right now.</summary>
 		public double? GetFileProgress(ChecksumFile file)
 		{
@@ -222,8 +235,8 @@ namespace TaoSFV.Verification
 						}
 					}
 
-					if (options.DeleteFailedFiles)
-						Program.SafeDelete(changedFileName, options.UseRecycleBin);
+					if (options.DeleteFailedFiles && !Program.SafeDelete(changedFileName, options.UseRecycleBin))
+						context.AddNotRecycled(changedFileName);
 				}
 
 				return file.State;

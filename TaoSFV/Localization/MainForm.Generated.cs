@@ -269,6 +269,12 @@ namespace TaoSFV.Localization
         ///<summary>{0} checksum file(s) couldn't be read and were skipped. The others are checked as usual.\n\n{1}</summary>
         public string SkippedChecksumFiles_Message { get; set; }
 
+        ///<summary>Failed Files Not Deleted</summary>
+        public string NotRecycled_Title { get; set; }
+
+        ///<summary>{0:#,0} failed file(s) weren't deleted: the Recycle Bin can't hold paths of 260 characters or more, so they were left in place. ...\n\n{1}</summary>
+        public string NotRecycled_Message { get; set; }
+
         ///<summary>Checksum File Not Read</summary>
         public string UnreadableChecksumFile_Title { get; set; }
 

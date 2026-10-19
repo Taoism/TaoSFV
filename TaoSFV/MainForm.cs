@@ -1152,6 +1152,13 @@ export results to text file
                     ToggleMenuItemsEnabled(true, (_files_missing != 0));
 
                     btnGo.Text = Language.MainForm.GoButton;
+
+                    if (context.NotRecycled.Count != 0)
+                    {
+                        // posted, so the run finishes (and _workingOnList clears) before the message waits for OK
+                        string[] notRecycled = context.NotRecycled.ToArray();
+                        BeginInvoke(new Action(() => ShowNotRecycled(notRecycled)));
+                    }
                 }
 
                 _workingOnList = false;
@@ -1159,6 +1166,15 @@ export results to text file
                 _verifyCancel.Dispose();
                 _verifyCancel = null;
             }
+        }
+
+        private void ShowNotRecycled(string[] files)
+        {
+            string list = string.Join(Environment.NewLine, files.Take(10));
+            if (files.Length > 10)
+                list += Environment.NewLine + "...";
+            MessageBox.Show(this, string.Format(Language.MainForm.NotRecycled_Message, files.Length, list),
+                Language.MainForm.NotRecycled_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         // the file most recently started, for the progress timer to select (written by the producer thread)
