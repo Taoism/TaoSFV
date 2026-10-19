@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -1108,7 +1108,7 @@ export results to text file
 
                 SetStatusText(Language.MainForm.Status_UpdatingCache);
                 TimeSpan timeSpent = DateTime.Now - start;
-                Program.Settings.Statistics.AddStats(_files_ok + _files_bad + _files_missing + _files_unreadable, _set_index, context.BytesProcessed / 1024 / 1024, _files_ok, timeSpent);
+                Program.Settings.Statistics.AddStats(_files_ok + _files_bad + _files_missing + _files_unreadable, _set_index, context.BytesChecked / 1024 / 1024, _files_ok, timeSpent);
                 await Task.Run(() => Cache.Clean());
 
                 if (Program.Settings.Check.AutoCloseWhenDoneChecking)
@@ -1129,7 +1129,7 @@ export results to text file
                 if (!IsDisposed)
                     FlushStatusBar();
 
-                long bytesProcessed = context.BytesProcessed;
+                long bytesProcessed = context.BytesChecked;
                 TimeSpan totalTime = DateTime.Now - start;
                 decimal totalMB = bytesProcessed / 1024.0m / 1024.0m;
                 int percentGood = _files_parts == 0 ? 0 : (_files_ok * 100) / _files_parts;
@@ -1905,7 +1905,7 @@ export results to text file
                 progressTimer.Stop();
 
                 TimeSpan timeSpent = DateTime.Now - start;
-                Program.Settings.Statistics.AddStats(_files_parts, _set_index, context.BytesProcessed / 1024 / 1024, _files_ok, timeSpent);
+                Program.Settings.Statistics.AddStats(_files_parts, _set_index, context.BytesChecked / 1024 / 1024, _files_ok, timeSpent);
                 await Task.Run(() => Cache.Clean());
 
                 if (Program.Settings.Create.AutoCloseWhenDoneCreating)
@@ -1923,7 +1923,7 @@ export results to text file
                 if (!IsDisposed)
                     FlushStatusBar();
 
-                long bytesProcessed = context.BytesProcessed;
+                long bytesProcessed = context.BytesChecked;
                 TimeSpan totalTime = DateTime.Now - start;
                 decimal totalMB = bytesProcessed / 1024.0m / 1024.0m;
                 int percentGood = _files_parts == 0 ? 0 : (_files_ok * 100) / _files_parts;

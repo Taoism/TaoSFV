@@ -97,7 +97,22 @@ namespace TaoSFV.Tests
 			}
 
 			Assert.Null(context.GetFileProgress(file));       // not left "in progress"
-			Assert.Equal(100000, context.BytesProcessed);     // counted as done, like any finished file
+			Assert.Equal(100000, context.BytesProcessed);     // counted as done, so progress still reaches 100%
+			Assert.Equal(0, context.BytesChecked);            // but not as checked, so speed and "MB checked" aren't inflated
+		}
+
+		[Fact]
+		public void CheckedBytesIncludeCachedAndHashedFiles()
+		{
+			string path = Write("a.bin", 300000, 7);
+			ChecksumSet set = new ChecksumSet(Path.Combine(_dir, "set.sfv"), _dir, ChecksumType.SFV);
+			ChecksumFile file = new ChecksumFile(set) { FileName = "a.bin", OriginalChecksum = Crc(path), FileInfo = new FileInfo(path) };
+			set.Files.Add(file);
+			VerifyContext context = new VerifyContext(CancellationToken.None);
+
+			FileVerifier.Verify(set, file, VerifyOptions.ReadOnly(false), new System.Collections.Generic.Dictionary<string, ChecksumFile>(), context);
+
+			Assert.Equal(300000, context.BytesChecked);
 		}
 
 		[Fact]

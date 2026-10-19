@@ -14,7 +14,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       defunct cdtag.com. Either remove it or point it at GitHub Releases (needs the repo below).
 - [ ] **Recycle Bin with long paths.** Deleting failed files via the Recycle Bin uses `SHFileOperation`, which can't
       take paths of 260+ characters; such files are left in place. Switch to `IFileOperation`.
-- [ ] **Unreadable files inflate the speed figure.** Their full size is counted as processed, so MB/s and the
+- [x] **Unreadable files inflate the speed figure.** Their full size is counted as processed, so MB/s and the
       "MB checked" statistic are overstated when files can't be read.
 - [ ] **Re-test Remove Duplicates and Truncate File Names.** Not exercised since the .NET 10 port; Remove Duplicates
       also still builds real ListView rows (slow for big lists on this machine, see the virtual list change).

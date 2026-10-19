@@ -221,7 +221,7 @@ Exit codes:
 					summary += ", " + unreadable + " unreadable";
 				if (skipped != 0)
 					summary += string.Format(", {0} checksum file{1} skipped", skipped, skipped == 1 ? "" : "s");
-				summary += string.Format(" - {0} in {1:0.0} s", FormatBytes(context.BytesProcessed), stopwatch.Elapsed.TotalSeconds);
+				summary += string.Format(" - {0} in {1:0.0} s", FormatBytes(context.BytesChecked), stopwatch.Elapsed.TotalSeconds);
 				Console.WriteLine(summary);
 			}
 

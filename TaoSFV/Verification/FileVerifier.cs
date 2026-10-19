@@ -48,6 +48,7 @@ namespace TaoSFV.Verification
 	{
 		private readonly ConcurrentDictionary<ChecksumFile, long[]> _inFlight = new ConcurrentDictionary<ChecksumFile, long[]>();
 		private long _completedBytes;
+		private long _skippedBytes;
 
 		internal VerifyContext(CancellationToken cancel, PauseGate pause)
 		{
@@ -75,6 +76,15 @@ namespace TaoSFV.Verification
 			}
 		}
 
+		/// <summary>
+		/// BytesProcessed without the unread part of files that failed (unreadable or cancelled): the bytes actually
+		/// checked, for speed and statistics. BytesProcessed still counts them so progress reaches 100%.
+		/// </summary>
+		public long BytesChecked
+		{
+			get { return BytesProcessed - Interlocked.Read(ref _skippedBytes); }
+		}
+
 		/// <summary>Fraction (0-1) of a file in progress, or null if it isn't being read right now.</summary>
 		public double? GetFileProgress(ChecksumFile file)
 		{
@@ -91,11 +101,13 @@ namespace TaoSFV.Verification
 			return counter;
 		}
 
-		internal void End(ChecksumFile file, long length)
+		internal void End(ChecksumFile file, long length, bool finished)
 		{
 			long[] removed;
 			_inFlight.TryRemove(file, out removed);
 			Interlocked.Add(ref _completedBytes, length);
+			if (!finished && removed != null)
+				Interlocked.Add(ref _skippedBytes, Math.Max(0, length - Interlocked.Read(ref removed[0])));
 		}
 	}
 
@@ -154,6 +166,7 @@ namespace TaoSFV.Verification
 
 			long length = file.FileInfo.Length;
 			long[] counter = context.Begin(file);
+			bool finished = false;
 			try
 			{
 				if (options.CleanupBadMissing)
@@ -188,6 +201,8 @@ namespace TaoSFV.Verification
 						Cache.Update(set.Type, file.FileInfo, file.CurrentChecksum);
 				}
 
+				finished = true;
+
 				if (string.Compare(file.CurrentChecksum, file.OriginalChecksum, true) == 0)
 				{
 					file.State = ChecksumFileState.OK;
@@ -215,7 +230,7 @@ namespace TaoSFV.Verification
 			}
 			finally
 			{
-				context.End(file, length);
+				context.End(file, length, finished);
 			}
 		}
 
@@ -225,13 +240,16 @@ namespace TaoSFV.Verification
 		public static string HashFile(ChecksumAlgorithm algorithm, ChecksumFile file, VerifyContext context)
 		{
 			long[] counter = context.Begin(file);
+			bool finished = false;
 			try
 			{
-				return ComputeChecksum(algorithm, file.FileInfo, context, counter);
+				string checksum = ComputeChecksum(algorithm, file.FileInfo, context, counter);
+				finished = true;
+				return checksum;
 			}
 			finally
 			{
-				context.End(file, file.FileInfo.Length);
+				context.End(file, file.FileInfo.Length, finished);
 			}
 		}
 
