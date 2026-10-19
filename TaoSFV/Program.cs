@@ -375,15 +375,8 @@ namespace TaoSFV
         {
             if (useRecycleBin)
             {
-                InteropSHFileOperation fo = new InteropSHFileOperation();
-                fo.wFunc = InteropSHFileOperation.FO_Func.FO_DELETE;
-                fo.fFlags.FOF_ALLOWUNDO = true;
-                fo.fFlags.FOF_NOCONFIRMATION = true;
-                fo.pFrom = fileName;
-
-                // SHFileOperation can't take paths of 260+ characters; the file is then left in place rather
-                // than deleted permanently
-                if (!fo.Execute())
+                // a file the Recycle Bin won't take is left in place rather than deleted permanently
+                if (!RecycleBin.Recycle(fileName))
                     Trace.WriteLine(string.Format("Couldn't move {0} to the Recycle Bin", fileName));
             }
             else

@@ -12,8 +12,11 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       before checking starts.
 - [ ] **Dead update check.** Preferences still offers "Check for updates every N days" and the code calls the
       defunct cdtag.com. Either remove it or point it at GitHub Releases (needs the repo below).
-- [ ] **Recycle Bin with long paths.** Deleting failed files via the Recycle Bin uses `SHFileOperation`, which can't
-      take paths of 260+ characters; such files are left in place. Switch to `IFileOperation`.
+- [ ] **Recycle Bin with long paths.** Now uses `IFileOperation` (`Tools/RecycleBin.cs`), but switching didn't
+      help: the Recycle Bin itself can't hold a path of 260+ characters, and the shell then deletes the file
+      permanently (tested on Windows 11 with long paths enabled, and via 8.3 short names). Such files are left in
+      place, silently. Decide: tell the user which files were left, or move them to a short folder first and
+      recycle from there (restoring would then put them in that folder).
 - [x] **Unreadable files inflate the speed figure.** Their full size is counted as processed, so MB/s and the
       "MB checked" statistic are overstated when files can't be read.
 - [ ] **Re-test Remove Duplicates and Truncate File Names.** Not exercised since the .NET 10 port; Remove Duplicates
