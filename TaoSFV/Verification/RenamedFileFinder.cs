@@ -26,6 +26,10 @@ namespace TaoSFV.Verification
 			// a candidate file is hashed at most once, however many missing files it's compared against
 			Dictionary<string, string> candidateChecksums = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+			// and each folder is listed once (null: doesn't exist), not once per missing file
+			Dictionary<string, string[]> folderFiles = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+			HashSet<string> moved = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
 			foreach (ChecksumFile file in set.Files)
 			{
 				if (file.State != ChecksumFileState.Missing)
@@ -35,11 +39,20 @@ namespace TaoSFV.Verification
 				string directory = Path.GetDirectoryName(fullFileName);
 				string lookForExt = Path.GetExtension(fullFileName);
 
-				if (!Directory.Exists(directory))
+				string[] candidates;
+				if (!folderFiles.TryGetValue(directory, out candidates))
+				{
+					candidates = Directory.Exists(directory) ? Directory.GetFiles(directory, "*.*", SearchOption.TopDirectoryOnly) : null;
+					folderFiles[directory] = candidates;
+				}
+				if (candidates == null)
 					continue;
 
-				foreach (string candidate in Directory.GetFiles(directory, "*.*", SearchOption.TopDirectoryOnly))
+				foreach (string candidate in candidates)
 				{
+					if (moved.Contains(candidate))
+						continue; // already renamed back to another missing file's name
+
 					context.Cancel.ThrowIfCancellationRequested();
 
 					string candidateExt = Path.GetExtension(candidate);
@@ -79,6 +92,7 @@ namespace TaoSFV.Verification
 					}
 
 					candidateChecksums.Remove(candidate);
+					moved.Add(candidate);
 					inSet.Add(target);
 					file.CurrentChecksum = checksum;
 					file.FileInfo = new FileInfo(target);

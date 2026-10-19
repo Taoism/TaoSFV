@@ -76,21 +76,20 @@ namespace TaoSFV
 				else if (data.GetDataPresent("FileGroupDescriptor"))
 				{
 					Stream stream = (Stream)data.GetData("FileGroupDescriptor");
+					// a single Read may return fewer bytes than asked for; the rest of the buffer stays zero
 					byte[] fileGroupDescriptor = new byte[512];
-					stream.Read(fileGroupDescriptor, 0, 512);
+					stream.ReadAtLeast(fileGroupDescriptor, fileGroupDescriptor.Length, false);
 
 					// build the filename from the FileGroupDescriptor block
 					StringBuilder fileName = new StringBuilder();
-					for (int i = 76; fileGroupDescriptor[i] != 0; i++)
+					for (int i = 76; i < fileGroupDescriptor.Length && fileGroupDescriptor[i] != 0; i++)
 					{
 						fileName.Append(Convert.ToChar(fileGroupDescriptor[i]));
 					}
 					stream.Close();
 
 					MemoryStream ms = (MemoryStream)data.GetData("FileContents", true);
-					byte[] fileBytes = new byte[ms.Length];
-					ms.Position = 0;
-					ms.Read(fileBytes, 0, (int)ms.Length);
+					byte[] fileBytes = ms.ToArray();
 
 					list.Add(new FileDrop(fileName.ToString(), fileBytes));
 				}

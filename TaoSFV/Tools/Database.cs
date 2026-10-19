@@ -10,7 +10,7 @@ namespace TaoSFV
 	internal static class Database
 	{
 		public const int SettingsVersion = 2;
-		public const int CacheVersion = 2;
+		public const int CacheVersion = 3;
 
 		public static SqliteConnection Open(string fileName)
 		{
@@ -244,6 +244,18 @@ create index IX_SHA256FileCache_FileName on SHA256FileCache (FileName);
 
 create table SHA512FileCache (ID integer primary key autoincrement, FileName text not null, LastWriteUtc text not null, FileLength integer not null, SHA512 text not null);
 create index IX_SHA512FileCache_FileName on SHA512FileCache (FileName);
+");
+				}
+
+				if (version < 3)
+				{
+					// Cache.GetCache looks files up by folder, ignoring case; that needs NOCASE indexes (LIKE scanned the table)
+					Execute(conn, @"
+create index IX_CRC32FileCache_FileName_NoCase on CRC32FileCache (FileName collate nocase);
+create index IX_MD5FileCache_FileName_NoCase on MD5FileCache (FileName collate nocase);
+create index IX_SHA1FileCache_FileName_NoCase on SHA1FileCache (FileName collate nocase);
+create index IX_SHA256FileCache_FileName_NoCase on SHA256FileCache (FileName collate nocase);
+create index IX_SHA512FileCache_FileName_NoCase on SHA512FileCache (FileName collate nocase);
 ");
 				}
 

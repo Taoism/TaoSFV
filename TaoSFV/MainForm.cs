@@ -1070,10 +1070,12 @@ export results to text file
                     if (_queueStop)
                         break;
 
-                    UpdateStatusBar();
+                    // the progress timer redraws it; status bar layout per set was most of the cost of small sets
+                    _statusBarDirty = true;
 
                     ChecksumSet set = _sets[_set_index];
-                    txtComments.Text = set.Comments;
+                    if (txtComments.Text != set.Comments)
+                        txtComments.Text = set.Comments;
 
                     lvwFiles.Focus();
 
@@ -1088,7 +1090,8 @@ export results to text file
 
                     progressBar1.Value = 100;
 
-                    if (Program.Settings.Check.AutoFindRenames && _files_missing != 0)
+                    // only this set's missing files: _files_missing is a run total
+                    if (Program.Settings.Check.AutoFindRenames && set.Files.Any(p => p.State == ChecksumFileState.Missing))
                         await FindRenamedFilesAsync(set, context);
 
                     if (_queueHideGood)
@@ -1249,7 +1252,8 @@ export results to text file
                 if (_queueHideGood)
                     ApplyHideGood();
 
-                await Task.Delay(50);
+                // wakes early when the set is done: a fixed 50 ms here cost every set that much, even with nothing to read
+                await Task.WhenAny(producer, Task.Delay(50));
             }
 
             await producer;
@@ -1644,7 +1648,10 @@ export results to text file
         {
             Guard.ArgumentNotNull(set, "set");
 
-            SetStatusText(string.Format(Language.MainForm.Status_FindingRenamesInFile, set.VerificationFileName));
+            // during a run the progress timer owns the status bar
+            bool duringRun = _verifyCancel != null;
+            if (!duringRun)
+                SetStatusText(string.Format(Language.MainForm.Status_FindingRenamesInFile, set.VerificationFileName));
 
             bool lowercase = Program.Settings.Check.Renaming == CheckRenaming.Lowercase;
             List<ChecksumFile> found;
@@ -1665,10 +1672,18 @@ export results to text file
                 RedrawFile(file);
             }
 
-            UpdateStatusBar();
-
-            if (found.Count != 0)
-                ApplyHideGood();
+            if (duringRun)
+            {
+                _statusBarDirty = true;
+                if (found.Count != 0 && Program.Settings.General.HideGoodFiles)
+                    _rowsDirty = true;
+            }
+            else
+            {
+                UpdateStatusBar();
+                if (found.Count != 0)
+                    ApplyHideGood();
+            }
 
             return found.Count;
         }

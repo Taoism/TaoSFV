@@ -183,15 +183,21 @@ namespace TaoSFV
 				return new List<ChecksumFile>();
 
 			ChecksumAlgorithm algorithm = ChecksumAlgorithm.Get(checksumType);
-			string getCacheSql = string.Format("select FileName, LastWriteUtc, FileLength, {1} as Checksum from {0} where FileName like @Directory || '%'",
-				algorithm.CacheTable, algorithm.CacheColumn);
+
+			// names starting with the folder, ignoring ASCII case (as the LIKE this replaces did), as a range the NOCASE
+			// index can use: [folder, folder with its last character + 1)
+			string from, to;
+			GetPrefixRange(baseDirectory, out from, out to);
+			string getCacheSql = string.Format("select FileName, LastWriteUtc, FileLength, {1} as Checksum from {0} " +
+				"where FileName >= @From collate nocase and FileName < @To collate nocase", algorithm.CacheTable, algorithm.CacheColumn);
 
 			DataTable dt;
 
 			using (SqliteConnection conn = Program.GetOpenCacheConnection())
 			using (SqliteCommand cmd = new SqliteCommand(getCacheSql, conn))
 			{
-				cmd.Parameters.AddWithValue("@Directory", baseDirectory);
+				cmd.Parameters.AddWithValue("@From", from);
+				cmd.Parameters.AddWithValue("@To", to);
 				dt = Database.GetTable(cmd);
 			}
 
@@ -209,6 +215,31 @@ namespace TaoSFV
 			}
 
 			return files;
+		}
+
+		/// <summary>
+		/// Bounds for "starts with prefix" under SQLite's NOCASE collation (which only folds ASCII A-Z): the prefix
+		/// lowercased, and the same with its last character incremented.
+		/// </summary>
+		internal static void GetPrefixRange(string prefix, out string from, out string to)
+		{
+			char[] chars = prefix.ToCharArray();
+			for (int i = 0; i < chars.Length; i++)
+			{
+				if (chars[i] >= 'A' && chars[i] <= 'Z')
+					chars[i] = (char)(chars[i] + 32);
+			}
+			from = new string(chars);
+
+			// an empty prefix, or one ending in U+FFFF, can't be incremented: everything from `from` on
+			int last = chars.Length - 1;
+			if (last < 0 || chars[last] == char.MaxValue)
+			{
+				to = new string(char.MaxValue, 2);
+				return;
+			}
+			chars[last]++;
+			to = new string(chars);
 		}
 
 		internal static void Clear()
