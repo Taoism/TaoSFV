@@ -24,7 +24,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 - [x] **Re-test Remove Duplicates and Truncate File Names.** Not exercised since the .NET 10 port; Remove Duplicates
       also still builds real ListView rows (slow for big lists on this machine, see the virtual list change).
       (Done: logic moved to `DuplicateFinder` / `FileNameTruncator` with tests; fixed crashes and the groups list
-      is virtual. Truncate still doesn't update checksum files that list the renamed files.)
+      is virtual. Truncate updates checksum files in the chosen folder that list renamed files; ones above it aren't.)
 
 ## Features
 

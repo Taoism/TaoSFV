@@ -1,6 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using TaoSFV.Hash;
+using TaoSFV.Model.Workset;
 
 namespace TaoSFV
 {
@@ -13,6 +18,9 @@ namespace TaoSFV
 		}
 
 		public int Renamed { get; set; }
+
+		/// <summary>Checksum files in the folder that listed a renamed file and were updated to the new name.</summary>
+		public int ChecksumFilesUpdated { get; set; }
 
 		/// <summary>Full path and reason for each long name that couldn't be shortened (null: the extension leaves no room).</summary>
 		public List<KeyValuePair<string, string>> NotRenamed { get; private set; }
@@ -35,6 +43,9 @@ namespace TaoSFV
 			TruncateResult result = new TruncateResult();
 			List<string> files = new List<string>();
 			Collect(folder, files);
+
+			// old full path -> new file name, to update checksum files that list them
+			Dictionary<string, string> renamed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 			foreach (string fullPath in files)
 			{
@@ -70,6 +81,7 @@ namespace TaoSFV
 						renaming(fileName, Path.GetFileName(newPath));
 					File.Move(fullPath, newPath);
 					result.Renamed++;
+					renamed[Path.GetFullPath(fullPath)] = Path.GetFileName(newPath);
 				}
 				catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
 				{
@@ -77,7 +89,89 @@ namespace TaoSFV
 				}
 			}
 
+			if (renamed.Count != 0)
+				result.ChecksumFilesUpdated = UpdateChecksumFiles(folder, renamed, result);
+
 			return result;
+		}
+
+		/// <summary>
+		/// Points entries for renamed files at their new names, in every checksum file in the folder and its subfolders
+		/// (by their names after renaming). Only those lines change: comments, line endings, the encoding and
+		/// '/' or '\' separators are kept. Returns how many checksum files were changed.
+		/// </summary>
+		private static int UpdateChecksumFiles(string folder, Dictionary<string, string> renamed, TruncateResult result)
+		{
+			List<string> files = new List<string>();
+			Collect(folder, files);
+
+			int updated = 0;
+			foreach (string checksumFile in files)
+			{
+				ChecksumAlgorithm algorithm = ChecksumAlgorithm.FromExtension(checksumFile);
+				if (algorithm == null)
+					continue;
+
+				try
+				{
+					if (UpdateChecksumFile(checksumFile, algorithm.Type, renamed))
+						updated++;
+				}
+				catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+				{
+					result.NotRenamed.Add(new KeyValuePair<string, string>(checksumFile, ex.Message));
+				}
+			}
+			return updated;
+		}
+
+		private static bool UpdateChecksumFile(string checksumFile, ChecksumType type, Dictionary<string, string> renamed)
+		{
+			byte[] bytes = File.ReadAllBytes(checksumFile);
+			int preambleLength;
+			Encoding encoding = ChecksumFileFormat.DetectEncoding(bytes, out preambleLength);
+			string text = encoding.GetString(bytes, preambleLength, bytes.Length - preambleLength);
+			string directory = Path.GetDirectoryName(Path.GetFullPath(checksumFile));
+
+			// split keeping each line's ending
+			string[] lines = Regex.Split(text, @"(?<=\n)");
+			bool changed = false;
+			for (int i = 0; i < lines.Length; i++)
+			{
+				string line = ChecksumSetLoader.CleanLine(lines[i]);
+				string fileName, checksum;
+				if (line.Length == 0 || ChecksumFileFormat.IsComment(line, type) || !ChecksumFileFormat.TryParseLine(line, type, out fileName, out checksum))
+					continue;
+
+				string newName;
+				string listed;
+				try
+				{
+					listed = Path.GetFullPath(Path.Combine(directory, fileName));
+				}
+				catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException)
+				{
+					continue;
+				}
+				if (!renamed.TryGetValue(listed, out newName))
+					continue;
+
+				// replace just the file name part (the last segment), as written in the line
+				string oldName = Path.GetFileName(fileName);
+				int at = lines[i].LastIndexOf(oldName, StringComparison.OrdinalIgnoreCase);
+				if (at < 0)
+					continue;
+				lines[i] = lines[i].Substring(0, at) + newName + lines[i].Substring(at + oldName.Length);
+				changed = true;
+			}
+
+			if (!changed)
+				return false;
+
+			byte[] preamble = bytes.Take(preambleLength).ToArray();
+			byte[] body = encoding.GetBytes(string.Concat(lines));
+			File.WriteAllBytes(checksumFile, preamble.Concat(body).ToArray());
+			return true;
 		}
 
 		/// <summary>

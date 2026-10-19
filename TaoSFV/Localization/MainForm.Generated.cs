@@ -338,6 +338,9 @@ namespace TaoSFV.Localization
         ///<summary>The extension leaves no room for a shorter name.</summary>
         public string TruncateFileNames_NoRoom { get; set; }
 
+        ///<summary>{0:#,0} checksum file(s) in the folder updated to the new names.</summary>
+        public string TruncateFileNames_ChecksumFilesUpdated { get; set; }
+
         ///<summary>Select a Folder</summary>
         public string FolderBrowseDialog_Title { get; set; }
     }

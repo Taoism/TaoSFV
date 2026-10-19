@@ -154,6 +154,7 @@ TruncateFileNames_MinimumLengthIs12               = Minimum length is 12.
 TruncateFileNames_FilesRenamed_Message            = {0:#,0} file(s) renamed.
 TruncateFileNames_NotRenamed_Message              = {0:#,0} file(s) couldn't be renamed:\n\n{1}
 TruncateFileNames_NoRoom                          = The extension leaves no room for a shorter name.
+TruncateFileNames_ChecksumFilesUpdated            = {0:#,0} checksum file(s) in the folder updated to the new names.
 
 FolderBrowseDialog_Title                          = Select a Folder
 

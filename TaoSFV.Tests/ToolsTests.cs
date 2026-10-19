@@ -129,6 +129,27 @@ namespace TaoSFV.Tests
 		}
 
 		[Fact]
+		public void UpdatesChecksumFilesThatListRenamedFiles()
+		{
+			Touch(@"disc 1\01 - Long Song Title Number One.flac");
+			Touch(@"disc 1\02 short.flac");
+			string sfv = Path.Combine(_dir, "album.sfv");
+			File.WriteAllText(sfv, "; made by hand\r\ndisc 1\\01 - Long Song Title Number One.flac AAAA0001\r\ndisc 1\\02 short.flac AAAA0002\r\n");
+			string md5 = Path.Combine(_dir, "disc 1", "disc.md5");
+			File.WriteAllText(md5, "# md5sum style\nd41d8cd98f00b204e9800998ecf8427e *01 - Long Song Title Number One.flac\n");
+			string other = Path.Combine(_dir, "other.md5"); // the same name in another folder isn't this file
+			File.WriteAllText(other, "d41d8cd98f00b204e9800998ecf8427e *01 - Long Song Title Number One.flac\n");
+
+			TruncateResult result = FileNameTruncator.Truncate(_dir, 20, null);
+
+			Assert.Equal(1, result.Renamed);
+			Assert.Equal(2, result.ChecksumFilesUpdated);
+			Assert.Equal("; made by hand\r\ndisc 1\\01 - Long Song.flac AAAA0001\r\ndisc 1\\02 short.flac AAAA0002\r\n", File.ReadAllText(sfv));
+			Assert.Equal("# md5sum style\nd41d8cd98f00b204e9800998ecf8427e *01 - Long Song.flac\n", File.ReadAllText(md5));
+			Assert.Equal("d41d8cd98f00b204e9800998ecf8427e *01 - Long Song Title Number One.flac\n", File.ReadAllText(other));
+		}
+
+		[Fact]
 		public void ReportsFilesItCantRenameAndCarriesOn()
 		{
 			string noRoom = Touch(@"a.thisextensionistoolong");

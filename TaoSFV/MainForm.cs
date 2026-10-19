@@ -2587,6 +2587,8 @@ export results to text file
             }
 
             string message = string.Format(Language.MainForm.TruncateFileNames_FilesRenamed_Message, result.Renamed);
+            if (result.ChecksumFilesUpdated != 0)
+                message += " " + string.Format(Language.MainForm.TruncateFileNames_ChecksumFilesUpdated, result.ChecksumFilesUpdated);
             if (result.NotRenamed.Count != 0)
             {
                 string list = string.Join(Environment.NewLine, result.NotRenamed.Take(10).Select(p =>
