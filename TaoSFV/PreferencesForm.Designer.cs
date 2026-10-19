@@ -52,6 +52,8 @@
             this.lblLanguage = new System.Windows.Forms.Label();
             this.lblTheme = new System.Windows.Forms.Label();
             this.cboTheme = new System.Windows.Forms.ComboBox();
+            this.lblParallelReads = new System.Windows.Forms.Label();
+            this.cboParallelReads = new System.Windows.Forms.ComboBox();
             this.tpChecking = new System.Windows.Forms.TabPage();
             this.chkPlaySoundOnError = new System.Windows.Forms.CheckBox();
             this.chkAutomaticallyVerify = new System.Windows.Forms.CheckBox();
@@ -290,6 +292,8 @@
             // 
             // tpChecking
             // 
+            this.tpChecking.Controls.Add(this.lblParallelReads);
+            this.tpChecking.Controls.Add(this.cboParallelReads);
             this.tpChecking.Controls.Add(this.chkPlaySoundOnError);
             this.tpChecking.Controls.Add(this.chkAutomaticallyVerify);
             this.tpChecking.Controls.Add(this.grpRenaming);
@@ -306,6 +310,22 @@
             resources.ApplyResources(this.tpChecking, "tpChecking");
             this.tpChecking.Name = "tpChecking";
             this.tpChecking.UseVisualStyleBackColor = true;
+            // 
+            // lblParallelReads
+            // 
+            this.lblParallelReads.AutoSize = true;
+            this.lblParallelReads.Location = new System.Drawing.Point(236, 46);
+            this.lblParallelReads.Name = "lblParallelReads";
+            this.lblParallelReads.Text = "Parallel reads:";
+            // 
+            // cboParallelReads
+            // 
+            this.cboParallelReads.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboParallelReads.FormattingEnabled = true;
+            this.cboParallelReads.Location = new System.Drawing.Point(330, 42);
+            this.cboParallelReads.Name = "cboParallelReads";
+            this.cboParallelReads.Size = new System.Drawing.Size(83, 21);
+            this.cboParallelReads.TabIndex = 30;
             // 
             // chkPlaySoundOnError
             // 
@@ -738,6 +758,8 @@
         private System.Windows.Forms.Label lblLanguage;
         private System.Windows.Forms.Label lblTheme;
         private System.Windows.Forms.ComboBox cboTheme;
+        private System.Windows.Forms.Label lblParallelReads;
+        private System.Windows.Forms.ComboBox cboParallelReads;
 		private System.Windows.Forms.TrackBar trkCacheSize;
 		private System.Windows.Forms.Label lblCacheRecords;
         private System.Windows.Forms.Label lblRecords;

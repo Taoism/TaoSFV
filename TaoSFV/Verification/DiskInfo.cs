@@ -15,6 +15,12 @@ namespace TaoSFV.Verification
 
 		private static readonly ConcurrentDictionary<string, int> _byRoot = new ConcurrentDictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
+		/// <summary>The Parallel reads setting if set (1 or more), else the automatic choice for the folder's drive.</summary>
+		public static int GetParallelism(string directory, int setting)
+		{
+			return setting > 0 ? setting : GetParallelism(directory);
+		}
+
 		public static int GetParallelism(string directory)
 		{
 			string root;

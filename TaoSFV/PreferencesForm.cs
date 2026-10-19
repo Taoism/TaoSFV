@@ -10,6 +10,9 @@ namespace TaoSFV
 {
 	public sealed partial class PreferencesForm : Form
 	{
+		// Parallel reads choices; 0 = automatic
+		private static readonly int[] ParallelReadsChoices = { 0, 1, 2, 4, 8, 16 };
+
 		public PreferencesForm(bool showAbout)
 		{
 			InitializeComponent();
@@ -58,6 +61,7 @@ namespace TaoSFV
 			chkPlaySoundOnAllOK.Checked = Program.Settings.Check.PlaySoundOK;
 			chkPlaySoundOnAllOK_OnlyIfInactive.Checked = Program.Settings.Check.PlaySoundOK_OnlyIfInactive;
 			chkPlaySoundOnError.Checked = Program.Settings.Check.PlaySoundError;
+			cboParallelReads.SelectedIndex = Math.Max(0, Array.IndexOf(ParallelReadsChoices, Program.Settings.Check.ParallelReads));
 
 			switch (Program.Settings.Check.Renaming)
 			{
@@ -122,6 +126,12 @@ namespace TaoSFV
             cboTheme.Items.Clear();
             cboTheme.Items.AddRange(new object[] { p.Theme_System, p.Theme_Light, p.Theme_Dark });
             cboTheme.SelectedIndex = themeIndex;
+            lblParallelReads.Text = p.ParallelReads;
+            int parallelIndex = cboParallelReads.SelectedIndex;
+            cboParallelReads.Items.Clear();
+            foreach (int choice in ParallelReadsChoices)
+                cboParallelReads.Items.Add(choice == 0 ? p.ParallelReads_Automatic : choice.ToString());
+            cboParallelReads.SelectedIndex = parallelIndex;
             lblCacheSizeLabel.Text = p.CacheSize;
             lblRecords.Text = p.Records;
             btnClearCache.Text = p.ClearCacheButton;
@@ -271,6 +281,7 @@ namespace TaoSFV
 
 			// Checking
 			Program.Settings.Check.AutoFindRenames = chkAutoFindRenames.Checked;
+			Program.Settings.Check.ParallelReads = ParallelReadsChoices[Math.Max(cboParallelReads.SelectedIndex, 0)];
 			Program.Settings.Check.UseRecyleBin = chkUseRecycleBin.Checked;
 			Program.Settings.Check.RenameBadFiles = chkRenameBadFiles.Checked;
 			Program.Settings.Check.CreateMissingMarkers = chkCreateMissingMarkers.Checked;

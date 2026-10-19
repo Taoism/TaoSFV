@@ -1081,7 +1081,7 @@ export results to text file
 
                     IReadOnlyDictionary<string, ChecksumFile> cache = await Task.Run(() => FileVerifier.LoadCache(set, options));
 
-                    await ProcessFilesAsync(set, DiskInfo.GetParallelism(set.Directory), context.Cancel,
+                    await ProcessFilesAsync(set, DiskInfo.GetParallelism(set.Directory, Program.Settings.Check.ParallelReads), context.Cancel,
                         file => FileVerifier.Verify(set, file, options, cache, context),
                         ApplyFileResult);
 
@@ -1880,7 +1880,7 @@ export results to text file
                     ChecksumAlgorithm setAlgorithm = ChecksumAlgorithm.Get(set.Type);
 
                     int setOKCount = 0;
-                    await ProcessFilesAsync(set, DiskInfo.GetParallelism(set.Directory), context.Cancel,
+                    await ProcessFilesAsync(set, DiskInfo.GetParallelism(set.Directory, Program.Settings.Check.ParallelReads), context.Cancel,
                         file =>
                         {
                             if (!File.Exists(file.FileInfo.FullName))

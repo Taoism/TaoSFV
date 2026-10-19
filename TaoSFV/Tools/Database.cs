@@ -9,7 +9,7 @@ namespace TaoSFV
 	/// </summary>
 	internal static class Database
 	{
-		public const int SettingsVersion = 2;
+		public const int SettingsVersion = 3;
 		public const int CacheVersion = 3;
 
 		public static SqliteConnection Open(string fileName)
@@ -196,6 +196,12 @@ create table RecentFile
 				{
 					// SHA-256/SHA-512 files are checksum files too; don't hash them into new sets
 					Execute(conn, "update Creating set ExcludeFilesOfType = ExcludeFilesOfType || ';.sha256;.sha512' where ExcludeFilesOfType not like '%.sha256%';");
+				}
+
+				if (version < 3)
+				{
+					// files read at once while checking; 0 = automatic (by drive type)
+					Execute(conn, "alter table Checking add column ParallelReads integer not null default 0;");
 				}
 
 				SetVersion(conn, SettingsVersion);

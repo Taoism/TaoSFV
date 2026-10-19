@@ -171,6 +171,8 @@ Theme_System                                      = System default
 Theme_Light                                       = Light
 Theme_Dark                                        = Dark
 ThemeRestart_Message                              = Restart TaoSFV to apply the new theme.
+ParallelReads                                     = Parallel reads:
+ParallelReads_Automatic                           = Automatic
 CacheCleared_Message                              = Cache cleared.
 CacheCleared_Title                                = Clear Cache
 

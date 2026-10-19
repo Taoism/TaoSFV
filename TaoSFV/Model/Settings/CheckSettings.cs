@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using Microsoft.Data.Sqlite;
 
@@ -20,6 +20,9 @@ namespace TaoSFV.Model.Settings
 		public bool PlaySoundOK_OnlyIfInactive { get; set; }
 		public bool PlaySoundError { get; set; }
 
+		/// <summary>Files read at once while checking; 0 picks by drive (several on SSDs, one on hard drives).</summary>
+		public int ParallelReads { get; set; }
+
 		public void Save()
 		{
 			const string updateSql = @"update Checking set
@@ -35,7 +38,8 @@ AutoCloseWhenDoneCheckingOnlyIfAllOK = @AutoCloseWhenDoneCheckingOnlyIfAllOK,
 Renaming = @Renaming,
 PlaySoundOK = @PlaySoundOK,
 PlaySoundOK_IfInactive = @PlaySoundOK_IfInactive,
-PlaySoundError = @PlaySoundError
+PlaySoundError = @PlaySoundError,
+ParallelReads = @ParallelReads
 ";
 
 			using (SqliteCommand cmd = new SqliteCommand(updateSql, Program.GetOpenSettingsConnection()))
@@ -53,6 +57,7 @@ PlaySoundError = @PlaySoundError
 				cmd.AddParameter("@PlaySoundOK", PlaySoundOK);
 				cmd.AddParameter("@PlaySoundOK_IfInactive", PlaySoundOK_OnlyIfInactive);
 				cmd.AddParameter("@PlaySoundError", PlaySoundError);
+				cmd.AddParameter("@ParallelReads", ParallelReads);
 
 				cmd.ExecuteNonQuery();
 			}
@@ -75,6 +80,7 @@ PlaySoundError = @PlaySoundError
 			PlaySoundOK = Convert.ToBoolean(dr["PlaySoundOK"]);
 			PlaySoundOK_OnlyIfInactive = Convert.ToBoolean(dr["PlaySoundOK_IfInactive"]);
 			PlaySoundError = Convert.ToBoolean(dr["PlaySoundError"]);
+			ParallelReads = Convert.ToInt32(dr["ParallelReads"]);
 		}
 	}
 

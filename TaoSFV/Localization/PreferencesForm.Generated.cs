@@ -65,6 +65,12 @@ namespace TaoSFV.Localization
         ///<summary>Restart TaoSFV to apply the new theme.</summary>
         public string ThemeRestart_Message { get; set; }
 
+        ///<summary>Parallel reads:</summary>
+        public string ParallelReads { get; set; }
+
+        ///<summary>Automatic</summary>
+        public string ParallelReads_Automatic { get; set; }
+
         ///<summary>Cache cleared.</summary>
         public string CacheCleared_Message { get; set; }
 
