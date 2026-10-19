@@ -44,7 +44,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 - [ ] **Translations.** About 25 strings added in 2.0 exist only in English (theme, Verify Folder, SHA-256/512,
       Unregister, Unreadable, import, skipped files); the other five languages fall back to English. Also drop
       "Try running as Administrator" from their registration error text.
-- [ ] **Switch theme without restarting.**
+- [x] **Switch theme without restarting.**
 - [ ] **Sharper text on high-DPI screens.** Windows are laid out in fixed pixels and run system-DPI-aware.
 - [ ] **Comments template after importing.** Offer to update a header that still says "ilSFV" or links to
       cdtag.com. (This machine's TaoSFV template says "Using ilSFV" because its database predates the rename.)

@@ -327,8 +327,17 @@ namespace TaoSFV
 
 			Cursor.Current = Cursors.Default;
 
+			// re-themed once this dialog has closed, so it isn't rebuilt under the click
 			if (themeChanged)
-				MessageBox.Show(Language.PreferencesForm.ThemeRestart_Message, Language.PreferencesForm.Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+			{
+				EventHandler switchTheme = null;
+				switchTheme = (s, args) =>
+				{
+					Application.Idle -= switchTheme;
+					ThemeHelper.Switch(theme);
+				};
+				Application.Idle += switchTheme;
+			}
 
 			Close();
 		}

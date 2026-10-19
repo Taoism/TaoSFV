@@ -1,43 +1,181 @@
+using System;
 using System.Drawing;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using TaoSFV.Model.Settings;
 
 namespace TaoSFV
 {
 	/// <summary>
-	/// Touch-ups for controls that WinForms' built-in dark mode leaves light.
+	/// Touch-ups for controls that WinForms' built-in dark mode leaves light, and switching theme while windows are open.
 	/// </summary>
 	internal static class ThemeHelper
 	{
-		public static void Apply(Control root)
+		// what a control looked like before the dark touch-ups, to put back when switching to light
+		private sealed class Original
 		{
-			if (!Application.IsDarkModeEnabled)
-				return;
-
-			ApplyRecursive(root);
+			public bool UseVisualStyleBackColor;
+			public BorderStyle BorderStyle;
+			public FlatStyle FlatStyle;
 		}
 
-		private static void ApplyRecursive(Control control)
+		private static readonly ConditionalWeakTable<Control, Original> _touched = new ConditionalWeakTable<Control, Original>();
+		private static readonly ConditionalWeakTable<ToolStripItem, object> _paintHooked = new ConditionalWeakTable<ToolStripItem, object>();
+
+		/// <summary>Applies the dark touch-ups in dark mode, or undoes earlier ones in light mode.</summary>
+		public static void Apply(Control root)
 		{
-			// visual-styles tab pages paint the light theme background
-			TabPage tabPage = control as TabPage;
-			if (tabPage != null)
+			ApplyRecursive(root, Application.IsDarkModeEnabled);
+		}
+
+		/// <summary>
+		/// Changes the theme of the running app: every open window is re-themed and its window handles recreated, since
+		/// WinForms applies dark or light styling to native controls only when they're created.
+		/// </summary>
+		public static void Switch(AppTheme theme)
+		{
+			Program.ApplyTheme(theme);
+
+			// menus and status bars draw with a renderer whose colors were read once; a new one reads them again
+			ToolStripManager.Renderer = new ToolStripProfessionalRenderer();
+
+			MethodInfo recreateHandle = typeof(Control).GetMethod("RecreateHandle", BindingFlags.NonPublic | BindingFlags.Instance);
+			foreach (Form form in Application.OpenForms.Cast<Form>().ToList())
 			{
-				tabPage.UseVisualStyleBackColor = false;
-				tabPage.BackColor = SystemColors.Control;
+				Apply(form);
+				RefreshButtons(form);
+				RefreshToolStrips(form);
+				RefreshSystemColors(form);
+				if (form.IsHandleCreated && recreateHandle != null)
+					recreateHandle.Invoke(form, null);
+				SetDarkTitleBar(form, Application.IsDarkModeEnabled);
+				form.Invalidate(true);
+				form.Update();
+			}
+		}
+
+		// the title bar is drawn by Windows; a rebuilt window doesn't get the dark one on its own
+		private static void SetDarkTitleBar(Form form, bool dark)
+		{
+			if (!form.IsHandleCreated)
+				return;
+			int value = dark ? 1 : 0;
+			DwmSetWindowAttribute(form.Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref value, sizeof(int));
+		}
+
+		private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
+		[DllImport("dwmapi.dll")]
+		private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+
+		// a control keeps the brush it made from a system color (e.g. Window) through a handle rebuild; setting the
+		// color again makes a new one in the current mode's shade
+		private static void RefreshSystemColors(Control control)
+		{
+			Color back = control.BackColor;
+			if (back.IsSystemColor && !(control is Form))
+			{
+				control.BackColor = back == SystemColors.Window ? SystemColors.Control : SystemColors.Window;
+				control.BackColor = back;
 			}
 
-			// the 3D border has a white outer edge in dark mode
-			TextBoxBase textBox = control as TextBoxBase;
-			if (textBox != null && textBox.BorderStyle == BorderStyle.Fixed3D)
-				textBox.BorderStyle = BorderStyle.FixedSingle;
+			foreach (Control child in control.Controls)
+				RefreshSystemColors(child);
+		}
 
-			// drop-down lists keep a light gray face in dark mode unless they're flat
-			ComboBox comboBox = control as ComboBox;
-			if (comboBox != null)
+		private static void RefreshToolStrips(Control control)
+		{
+			ToolStrip strip = control as ToolStrip;
+			if (strip != null && strip.RenderMode == ToolStripRenderMode.ManagerRenderMode)
+				strip.Renderer = ToolStripManager.Renderer;
+
+			foreach (Control child in control.Controls)
+				RefreshToolStrips(child);
+		}
+
+		// buttons pick their renderer (light or dark) once; changing the style makes them pick again
+		private static void RefreshButtons(Control control)
+		{
+			ButtonBase button = control as ButtonBase;
+			if (button != null)
 			{
-				comboBox.FlatStyle = FlatStyle.Flat;
-				comboBox.BackColor = Color.Black;
-				comboBox.ForeColor = Color.White;
+				FlatStyle style = button.FlatStyle;
+				button.FlatStyle = style == FlatStyle.Flat ? FlatStyle.Standard : FlatStyle.Flat;
+				button.FlatStyle = style;
+			}
+
+			foreach (Control child in control.Controls)
+				RefreshButtons(child);
+		}
+
+		private static void ApplyRecursive(Control control, bool dark)
+		{
+			Original original;
+			bool touched = _touched.TryGetValue(control, out original);
+
+			if (dark && !touched)
+			{
+				original = new Original();
+				bool changed = false;
+
+				// visual-styles tab pages paint the light theme background
+				TabPage tabPage = control as TabPage;
+				if (tabPage != null)
+				{
+					original.UseVisualStyleBackColor = tabPage.UseVisualStyleBackColor;
+					tabPage.UseVisualStyleBackColor = false;
+					tabPage.BackColor = SystemColors.Control;
+					changed = true;
+				}
+
+				// the 3D border has a white outer edge in dark mode
+				TextBoxBase textBox = control as TextBoxBase;
+				if (textBox != null && textBox.BorderStyle == BorderStyle.Fixed3D)
+				{
+					original.BorderStyle = textBox.BorderStyle;
+					textBox.BorderStyle = BorderStyle.FixedSingle;
+					changed = true;
+				}
+
+				// drop-down lists keep a light gray face in dark mode unless they're flat
+				ComboBox comboBox = control as ComboBox;
+				if (comboBox != null)
+				{
+					original.FlatStyle = comboBox.FlatStyle;
+					comboBox.FlatStyle = FlatStyle.Flat;
+					comboBox.BackColor = Color.Black;
+					comboBox.ForeColor = Color.White;
+					changed = true;
+				}
+
+				if (changed)
+					_touched.Add(control, original);
+			}
+			else if (!dark && touched)
+			{
+				TabPage tabPage = control as TabPage;
+				if (tabPage != null)
+				{
+					tabPage.ResetBackColor();
+					tabPage.UseVisualStyleBackColor = original.UseVisualStyleBackColor;
+				}
+
+				TextBoxBase textBox = control as TextBoxBase;
+				if (textBox != null)
+					textBox.BorderStyle = original.BorderStyle;
+
+				ComboBox comboBox = control as ComboBox;
+				if (comboBox != null)
+				{
+					comboBox.FlatStyle = original.FlatStyle;
+					comboBox.ResetBackColor();
+					comboBox.ResetForeColor();
+				}
+
+				_touched.Remove(control);
 			}
 
 			ToolStrip toolStrip = control as ToolStrip;
@@ -46,18 +184,27 @@ namespace TaoSFV
 				foreach (ToolStripItem item in toolStrip.Items)
 				{
 					// 3D label borders are drawn with ControlLightLight, which is white in dark mode; draw over them
+					// (the handler checks the mode, so it's hooked once and left)
 					ToolStripStatusLabel label = item as ToolStripStatusLabel;
-					if (label != null && label.BorderSides != ToolStripStatusLabelBorderSides.None)
+					object hooked;
+					if (label != null && label.BorderSides != ToolStripStatusLabelBorderSides.None && !_paintHooked.TryGetValue(label, out hooked))
+					{
 						label.Paint += StatusLabel_Paint;
+						_paintHooked.Add(label, null);
+					}
 				}
+				toolStrip.Invalidate();
 			}
 
 			foreach (Control child in control.Controls)
-				ApplyRecursive(child);
+				ApplyRecursive(child, dark);
 		}
 
 		private static void StatusLabel_Paint(object sender, PaintEventArgs e)
 		{
+			if (!Application.IsDarkModeEnabled)
+				return;
+
 			ToolStripItem item = (ToolStripItem)sender;
 			Rectangle rect = new Rectangle(Point.Empty, item.Size);
 			using (Pen back = new Pen(item.Owner.BackColor))
