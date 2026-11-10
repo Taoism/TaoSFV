@@ -86,4 +86,10 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       (Done: self-contained zip and installer via `build-release.ps1`; per-user install, PATH option, /unregister on
       uninstall. Single-file isn't used: SQL CE loads its engine from amd64\ next to its DLL. Left: code signing
       (needs a certificate) and the winget listing (needs the published release).)
+- [ ] **Linux port in Rust (Debian and Ubuntu).** Rewrite TaoSFV in Rust for Linux: start with the command line
+      (verify/create for SFV, MD5, SHA-1/256/512, XXH128, BLAKE3, and PAR2 verify/repair, reading and writing the same
+      file formats as the Windows version), then a GUI (e.g. GTK4 or egui) with the same dark/light themes. Package as
+      .deb for Debian and Ubuntu (cargo-deb), with a desktop file and file manager integration (Nautilus script or a
+      .desktop action for checksum files). The Windows-only parts (registry file types, Task Scheduler, the ilSFV import)
+      need Linux counterparts or are dropped (scheduled checks via systemd timers).
 - [ ] **ARM64.** Builds are x64 only; the ilSFV import's SQL Server Compact engine only exists for x64/x86.

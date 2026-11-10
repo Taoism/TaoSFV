@@ -124,7 +124,22 @@
     <value>True</value>
   </metadata>
   <data name="txtReleaseNotes.Text" xml:space="preserve">
-    <value>TaoSFV 2.0 released 2026-10-16
+    <value>TaoSFV 2.1 released 2026-11-09
+
+NEW:
+- PAR2: open a .par2 to check its files and repair damaged, missing or renamed ones from the recovery data
+- XXH128 and BLAKE3 checksum files
+- taosfv-cli verify --use-cache, and verify/repair for .par2 sets
+- Create on a folder writes the checksum file inside it
+- Dark message boxes, and no white outlines in dark mode
+- Self-contained installer and zip (no .NET install needed)
+
+REMOVED:
+- The update check (its site no longer exists)
+
+=====
+
+TaoSFV 2.0 released 2026-10-16
 
 TaoSFV is made in tribute to ilSFV and hkSFV, continuing ilSFV (by Jud White) on modern Windows. Thanks Jud!
 
