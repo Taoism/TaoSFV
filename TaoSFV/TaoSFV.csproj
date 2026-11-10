@@ -22,6 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Blake3" Version="3.0.2" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
     <PackageReference Include="System.IO.Hashing" Version="10.0.13" />
     <!-- only for importing ilSFV's .sdf databases -->

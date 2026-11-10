@@ -114,7 +114,7 @@ namespace TaoSFV
 				{
 					// TaoSFV's newer checksum types are checksum files too
 					string exclude = Convert.ToString(creating["ExcludeFilesOfType"]);
-					foreach (string ext in new[] { ".sha256", ".sha512" })
+					foreach (string ext in new[] { ".sha256", ".sha512", ".xxh128", ".blake3" })
 					{
 						if (exclude.IndexOf(ext, StringComparison.OrdinalIgnoreCase) < 0)
 							exclude += ";" + ext;

@@ -58,6 +58,8 @@ namespace TaoSFV.Tests
 		[InlineData(ChecksumType.SHA1)]
 		[InlineData(ChecksumType.SHA256)]
 		[InlineData(ChecksumType.SHA512)]
+		[InlineData(ChecksumType.XXH128)]
+		[InlineData(ChecksumType.BLAKE3)]
 		public void Verify_ReportsOkBadAndMissing(ChecksumType type)
 		{
 			ChecksumAlgorithm algorithm = ChecksumAlgorithm.Get(type);

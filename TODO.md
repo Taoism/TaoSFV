@@ -34,7 +34,8 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 - [x] **Save results.** Export a run's results as text, CSV or HTML.
 - [x] **Parallel reads setting.** Preferences option to override the automatic choice (4 on SSDs, 1 on hard
       drives/shares), e.g. for RAID arrays or slow USB sticks. The CLI already has `--threads`.
-- [ ] **Faster hash types.** XXH3 and/or BLAKE3 as options for large libraries (less widely supported elsewhere).
+- [x] **Faster hash types.** XXH3 and/or BLAKE3 as options for large libraries (less widely supported elsewhere).
+      (Done: `.xxh128` (XXH3 128-bit, System.IO.Hashing) and `.blake3` (Blake3 NuGet, managed, BSD-2-Clause).)
 - [x] **CLI cache option.** `taosfv-cli verify --use-cache` to reuse the GUI's checksum cache (it never uses it now).
 - [x] **Where Create puts the file for a folder.** Right-click a folder > Create SFV writes `<parent>\<parent>.sfv`
       (ilSFV's behaviour). Consider writing `<folder>\<folder>.sfv` instead, or asking.

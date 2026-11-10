@@ -123,7 +123,25 @@ namespace TaoSFV.Model.Workset
 		/// </summary>
 		public static bool IsMd5SumStyle(ChecksumAlgorithm algorithm, bool md5SumCompatibility)
 		{
-			return md5SumCompatibility && algorithm.DigestFirst;
+			return (md5SumCompatibility && algorithm.DigestFirst) || IsNewTool(algorithm);
+		}
+
+		/// <summary>
+		/// XXH128 and BLAKE3 files are always written the way xxhsum and b3sum write them ('hash  name', '/', LF),
+		/// since those are the only other tools that read them; b3sum -c rejects the '*' binary marker.
+		/// </summary>
+		private static bool IsNewTool(ChecksumAlgorithm algorithm)
+		{
+			return algorithm.Type == ChecksumType.XXH128 || algorithm.Type == ChecksumType.BLAKE3;
+		}
+
+		/// <summary>
+		/// False for XXH128 and BLAKE3: xxhsum -c and b3sum -c don't document comment lines, so TaoSFV writes none
+		/// there (it still reads '#' and ';' comments in them).
+		/// </summary>
+		public static bool SupportsComments(ChecksumAlgorithm algorithm)
+		{
+			return !IsNewTool(algorithm);
 		}
 
 		public static string GetNewLine(ChecksumAlgorithm algorithm, bool md5SumCompatibility)
@@ -141,6 +159,8 @@ namespace TaoSFV.Model.Workset
 		{
 			if (!algorithm.DigestFirst)
 				return fileName + " " + checksum;
+			if (IsNewTool(algorithm))
+				return checksum + "  " + fileName.Replace('\\', '/');
 			if (md5SumCompatibility)
 				return checksum + " *" + fileName.Replace('\\', '/');
 			return checksum + " " + fileName;

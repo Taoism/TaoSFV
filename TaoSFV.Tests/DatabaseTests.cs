@@ -41,7 +41,7 @@ namespace TaoSFV.Tests
 			{
 				Database.UpgradeCache(conn);
 				DataTable dt = Database.GetTable(conn, "select name from sqlite_master where type = 'index' and name like '%_NoCase';");
-				Assert.Equal(5, dt.Rows.Count);
+				Assert.Equal(7, dt.Rows.Count);
 			}
 		}
 	}

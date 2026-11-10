@@ -147,7 +147,7 @@ MD5SumCompatibility bit not null, PromptForFileName bit not null, AutoCloseWhenD
 				Assert.Equal(0L, checking["PlaySoundError"]);
 
 				Dictionary<string, object> creating = Row(settings, "select * from Creating");
-				Assert.Equal(".sfv;.md5;.sha1;.par;.bad;.missing;.sha256;.sha512", creating["ExcludeFilesOfType"]);
+				Assert.Equal(".sfv;.md5;.sha1;.par;.bad;.missing;.sha256;.sha512;.xxh128;.blake3", creating["ExcludeFilesOfType"]);
 				Assert.Equal(1L, creating["CreateForEachSubDir"]);
 
 				Assert.Equal(" My header", Row(settings, "select Header from Comments")["Header"]);

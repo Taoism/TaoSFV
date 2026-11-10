@@ -20,6 +20,12 @@ namespace TaoSFV.Localization
         ///<summary>New SHA-&512 File...</summary>
         public string Menu_File_NewSHA512File { get; set; }
 
+        ///<summary>New &XXH128 File...</summary>
+        public string Menu_File_NewXXH128File { get; set; }
+
+        ///<summary>New &BLAKE3 File...</summary>
+        public string Menu_File_NewBLAKE3File { get; set; }
+
         ///<summary>&Open...</summary>
         public string Menu_File_Open { get; set; }
 

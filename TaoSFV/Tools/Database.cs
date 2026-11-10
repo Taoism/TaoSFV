@@ -10,7 +10,7 @@ namespace TaoSFV
 	internal static class Database
 	{
 		public const int SettingsVersion = 4;
-		public const int CacheVersion = 3;
+		public const int CacheVersion = 4;
 
 		public static SqliteConnection Open(string fileName)
 		{
@@ -221,6 +221,12 @@ create table RecentFile
 					}
 				}
 
+				if (version < 4)
+				{
+					// XXH128 and BLAKE3 files are checksum files too
+					Execute(conn, "update Creating set ExcludeFilesOfType = ExcludeFilesOfType || ';.xxh128;.blake3' where ExcludeFilesOfType not like '%.xxh128%';");
+				}
+
 				SetVersion(conn, SettingsVersion);
 				Execute(conn, "commit;");
 			}
@@ -279,6 +285,17 @@ create index IX_MD5FileCache_FileName_NoCase on MD5FileCache (FileName collate n
 create index IX_SHA1FileCache_FileName_NoCase on SHA1FileCache (FileName collate nocase);
 create index IX_SHA256FileCache_FileName_NoCase on SHA256FileCache (FileName collate nocase);
 create index IX_SHA512FileCache_FileName_NoCase on SHA512FileCache (FileName collate nocase);
+");
+				}
+
+				if (version < 4)
+				{
+					Execute(conn, @"
+create table XXH128FileCache (ID integer primary key autoincrement, FileName text not null, LastWriteUtc text not null, FileLength integer not null, XXH128 text not null);
+create index IX_XXH128FileCache_FileName_NoCase on XXH128FileCache (FileName collate nocase);
+
+create table BLAKE3FileCache (ID integer primary key autoincrement, FileName text not null, LastWriteUtc text not null, FileLength integer not null, BLAKE3 text not null);
+create index IX_BLAKE3FileCache_FileName_NoCase on BLAKE3FileCache (FileName collate nocase);
 ");
 				}
 

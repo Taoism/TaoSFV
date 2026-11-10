@@ -18,7 +18,11 @@ namespace TaoSFV.Hash
 		public static readonly ChecksumAlgorithm Sha256 = new ChecksumAlgorithm(ChecksumType.SHA256, "sha256", "SHA-256", 64, "SHA256", "SHA256FileCache", "SHA256", s => Hex(HashAlgorithmName.SHA256, s));
 		public static readonly ChecksumAlgorithm Sha512 = new ChecksumAlgorithm(ChecksumType.SHA512, "sha512", "SHA-512", 128, "SHA512", "SHA512FileCache", "SHA512", s => Hex(HashAlgorithmName.SHA512, s));
 
-		public static readonly IReadOnlyList<ChecksumAlgorithm> All = new[] { Sfv, Md5, Sha1, Sha256, Sha512 };
+		// faster than SHA-2 for large libraries; files from xxhsum -H2 (XXH128) and b3sum
+		public static readonly ChecksumAlgorithm Xxh128 = new ChecksumAlgorithm(ChecksumType.XXH128, "xxh128", "XXH128", 32, "XXH128", "XXH128FileCache", "XXH128", s => FastHashes.Xxh128(s));
+		public static readonly ChecksumAlgorithm Blake3 = new ChecksumAlgorithm(ChecksumType.BLAKE3, "blake3", "BLAKE3", 64, "BLAKE3", "BLAKE3FileCache", "BLAKE3", s => FastHashes.Blake3(s));
+
+		public static readonly IReadOnlyList<ChecksumAlgorithm> All = new[] { Sfv, Md5, Sha1, Sha256, Sha512, Xxh128, Blake3 };
 
 		private readonly Func<Stream, string> _compute;
 

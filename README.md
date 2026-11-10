@@ -4,12 +4,12 @@
 
 [![MIT License](http://img.shields.io/:license-mit-blue.svg)](https://github.com/judwhite/ilSFV/blob/master/LICENSE) 
 
-SFV, MD5, SHA-1, SHA-256 and SHA-512 file verification utility for Windows, with a command-line version.
+SFV, MD5, SHA-1, SHA-256, SHA-512, XXH128 and BLAKE3 file verification utility for Windows, with a command-line version.
 
 TaoSFV is made in tribute to ilSFV and hkSFV. It continues [ilSFV](https://github.com/judwhite/ilSFV) by Jud White, ported to .NET 10 with a dark mode. Thanks Jud!
 
 - Multi-language support (currently English, German, Chinese, Russian)
-- Supports SFV, MD5, SHA-1, SHA-256 and SHA-512 (md5sum/sha256sum, BSD `--tag` and hkSFV formats)
+- Supports SFV, MD5, SHA-1, SHA-256 and SHA-512 (md5sum/sha256sum, BSD `--tag` and hkSFV formats), plus XXH128 (`.xxh128`, as `xxhsum -H2` writes it) and BLAKE3 (`.blake3`, as `b3sum` writes it)
 - Batch file verification
 - Create and verify checksums for files in subdirectories
 - Optional cache for quickly re-verifying files
@@ -63,6 +63,7 @@ dotnet test TaoSFV.Tests
 - File associations and the Explorer "TaoSFV" menu are registered per user (HKCU), with no administrator prompt; Tools > Unregister File Types removes them.
 - Checking runs on background threads, several files at once on SSDs; Pause now really pauses reading.
 - SHA-256 and SHA-512 files (`.sha256`, `.sha512`), including in the cache, Explorer menus and File → New.
+- XXH128 and BLAKE3 files (`.xxh128`, `.blake3`) for large libraries. They're written as `hash  name` with `/` and no comment lines, so `xxhsum -c` and `b3sum -c` can read them. On a CPU with SHA instructions, SHA-256 is nearly as fast (1 GB from memory: CRC32 0.2 s, XXH128 0.4 s, BLAKE3 0.6 s, SHA-256 0.7 s, MD5 1.7 s); the drive is usually the limit.
 - "md5sum compatibility" (Preferences > Creating) now writes `/` separators, LF line endings and `#` comments, so GNU `md5sum -c` / `sha256sum -c` read the files without warnings. SFV files keep the hkSFV layout.
 - Paths longer than 260 characters work (the apps are long-path aware; Windows' LongPathsEnabled setting must be on). Moving a failed file to the Recycle Bin still can't handle such paths, so it is left in place.
 - Creating checksum files and Find Renamed Files also run in the background (Create reads several files at once on SSDs).

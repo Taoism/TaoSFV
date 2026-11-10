@@ -37,6 +37,8 @@
             this.miNewSHA1 = new System.Windows.Forms.ToolStripMenuItem();
             this.miNewSHA256 = new System.Windows.Forms.ToolStripMenuItem();
             this.miNewSHA512 = new System.Windows.Forms.ToolStripMenuItem();
+            this.miNewXXH128 = new System.Windows.Forms.ToolStripMenuItem();
+            this.miNewBLAKE3 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.miOpen = new System.Windows.Forms.ToolStripMenuItem();
             this.miVerifyFolder = new System.Windows.Forms.ToolStripMenuItem();
@@ -138,6 +140,8 @@
             this.miNewSHA1,
             this.miNewSHA256,
             this.miNewSHA512,
+            this.miNewXXH128,
+            this.miNewBLAKE3,
             this.toolStripSeparator5,
             this.miOpen,
             this.miVerifyFolder,
@@ -193,6 +197,20 @@
             this.miNewSHA512.Size = new System.Drawing.Size(210, 22);
             this.miNewSHA512.Text = "New SHA-&512 File...";
             this.miNewSHA512.Click += new System.EventHandler(this.miNewSHA512_Click);
+            // 
+            // miNewXXH128
+            // 
+            this.miNewXXH128.Name = "miNewXXH128";
+            this.miNewXXH128.Size = new System.Drawing.Size(210, 22);
+            this.miNewXXH128.Text = "New &XXH128 File...";
+            this.miNewXXH128.Click += new System.EventHandler(this.miNewXXH128_Click);
+            // 
+            // miNewBLAKE3
+            // 
+            this.miNewBLAKE3.Name = "miNewBLAKE3";
+            this.miNewBLAKE3.Size = new System.Drawing.Size(210, 22);
+            this.miNewBLAKE3.Text = "New &BLAKE3 File...";
+            this.miNewBLAKE3.Click += new System.EventHandler(this.miNewBLAKE3_Click);
             // 
             // toolStripSeparator5
             // 
@@ -901,6 +919,8 @@
 		private System.Windows.Forms.ToolStripMenuItem miNewSHA1;
 		private System.Windows.Forms.ToolStripMenuItem miNewSHA256;
 		private System.Windows.Forms.ToolStripMenuItem miNewSHA512;
+		private System.Windows.Forms.ToolStripMenuItem miNewXXH128;
+		private System.Windows.Forms.ToolStripMenuItem miNewBLAKE3;
 		private System.Windows.Forms.ToolStripMenuItem miNewMD5;
 		private System.Windows.Forms.ToolStripMenuItem miNewSFV;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;

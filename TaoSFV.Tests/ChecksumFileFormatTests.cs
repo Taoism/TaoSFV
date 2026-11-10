@@ -154,6 +154,29 @@ namespace TaoSFV.Tests
 			Assert.Equal("# made by TaoSFV", ChecksumFileFormat.FormatComment(sha256, true, " made by TaoSFV"));
 		}
 
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)] // the md5sum compatibility setting doesn't matter: only xxhsum and b3sum read these
+		public void Xxh128AndBlake3_AreWrittenLikeXxhsumAndB3sum(bool md5SumCompatibility)
+		{
+			foreach (ChecksumAlgorithm algorithm in new[] { ChecksumAlgorithm.Xxh128, ChecksumAlgorithm.Blake3 })
+			{
+				string digest = new string('a', algorithm.DigestLength);
+				Assert.Equal(digest + "  CD 1/track.flac", ChecksumFileFormat.FormatEntry(algorithm, md5SumCompatibility, @"CD 1\track.flac", digest));
+				Assert.Equal("\n", ChecksumFileFormat.GetNewLine(algorithm, md5SumCompatibility));
+				Assert.False(ChecksumFileFormat.SupportsComments(algorithm)); // none are written
+			}
+			Assert.True(ChecksumFileFormat.SupportsComments(ChecksumAlgorithm.Sha256));
+		}
+
+		[Theory]
+		[InlineData("99aa06d3014798d86001c324468d497f  dir/file.bin", @"dir\file.bin")]
+		[InlineData("XXH128 (file.bin) = 99aa06d3014798d86001c324468d497f", "file.bin")] // xxhsum --tag
+		public void Xxh128_ParsesLines(string line, string name)
+		{
+			AssertParses(ChecksumType.XXH128, line, name, "99aa06d3014798d86001c324468d497f");
+		}
+
 		[Fact]
 		public void HkSfvStyle_KeepsBackslashesCrlfAndSemicolonComments()
 		{
@@ -171,6 +194,8 @@ namespace TaoSFV.Tests
 		[InlineData("md5", true)]
 		[InlineData("md5", false)]
 		[InlineData("sha512", true)]
+		[InlineData("xxh128", false)]
+		[InlineData("blake3", false)]
 		public void WrittenEntries_ParseBack(string extension, bool md5SumCompatibility)
 		{
 			ChecksumAlgorithm algorithm = ChecksumAlgorithm.FromExtension(extension);
