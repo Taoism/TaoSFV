@@ -282,7 +282,7 @@ namespace TaoSFV
 			var p = Language.MainForm;
 			_list.BeginUpdate();
 			_list.Items.Clear();
-			foreach (Par2FileResult file in result.Files)
+			foreach (Par2FileResult file in result.Files.OrderBy(f => f.File.Name, StringComparer.CurrentCultureIgnoreCase))
 			{
 				string status;
 				Color color = _list.ForeColor;

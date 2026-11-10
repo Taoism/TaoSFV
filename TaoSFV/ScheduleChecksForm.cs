@@ -20,7 +20,8 @@ namespace TaoSFV
 		private readonly TextBox _folder = new TextBox();
 		private readonly ComboBox _frequency = new ComboBox();
 		private readonly ComboBox _day = new ComboBox();
-		private readonly DateTimePicker _time = new DateTimePicker();
+		// an editable list of times rather than a DateTimePicker, which Windows only draws light
+		private readonly ComboBox _time = new ComboBox();
 		private readonly Label _on = new Label();
 		private readonly Button _save = new Button();
 		private readonly Button _remove = new Button();
@@ -70,11 +71,12 @@ namespace TaoSFV
 			_on.AutoSize = true;
 			_on.Anchor = AnchorStyles.Left;
 			_on.Text = p.ScheduleChecks_On;
-			_time.Format = DateTimePickerFormat.Custom;
-			_time.CustomFormat = CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern; // no seconds
-			_time.ShowUpDown = true;
+			_time.DropDownStyle = ComboBoxStyle.DropDown;
+			_time.MaxDropDownItems = 12;
+			for (int minutes = 0; minutes < 24 * 60; minutes += 30)
+				_time.Items.Add(FormatTime(TimeSpan.FromMinutes(minutes)));
 			_time.Width = 100;
-			_time.Value = DateTime.Today.AddHours(3);
+			SetTime(TimeSpan.FromHours(3));
 			_save.Text = p.ScheduleChecks_Save;
 			_save.AutoSize = true;
 			_save.Click += Save_Click;
@@ -128,6 +130,31 @@ namespace TaoSFV
 				column.Width = (int)(column.Width * factor);
 			_day.Width = (int)(_day.Width * factor);
 			_time.Width = (int)(_time.Width * factor);
+		}
+
+		private static string FormatTime(TimeSpan time)
+		{
+			return DateTime.Today.Add(time).ToString(CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern, CultureInfo.CurrentCulture);
+		}
+
+		private void SetTime(TimeSpan time)
+		{
+			_time.Text = FormatTime(new TimeSpan(time.Hours, time.Minutes, 0));
+		}
+
+		/// <summary>The typed or chosen time of day ("3:00 AM", "15:30", "3 pm" ...), in this culture or invariant.</summary>
+		private bool TryGetTime(out TimeSpan time)
+		{
+			DateTime parsed;
+			string text = _time.Text.Trim();
+			if (DateTime.TryParse(text, CultureInfo.CurrentCulture, DateTimeStyles.NoCurrentDateDefault, out parsed) ||
+				DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out parsed))
+			{
+				time = new TimeSpan(parsed.Hour, parsed.Minute, 0);
+				return true;
+			}
+			time = TimeSpan.Zero;
+			return false;
 		}
 
 		private static TableLayoutPanel Row(params Control[] controls)
@@ -219,7 +246,7 @@ namespace TaoSFV
 				_day.SelectedIndex = (int)check.Day;
 			else if (check.Frequency == CheckFrequency.Monthly)
 				_day.SelectedIndex = Math.Min(Math.Max(check.DayOfMonth, 1), 28) - 1;
-			_time.Value = DateTime.Today + check.Time;
+			SetTime(check.Time);
 		}
 
 		private void Browse_Click(object sender, EventArgs e)
@@ -243,13 +270,21 @@ namespace TaoSFV
 			}
 			folder = Path.GetFullPath(folder);
 
+			TimeSpan time;
+			if (!TryGetTime(out time))
+			{
+				ThemedMessageBox.Show(this, string.Format(p.ScheduleChecks_BadTime, _time.Text, FormatTime(TimeSpan.FromHours(3))), Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+				_time.Focus();
+				return;
+			}
+
 			ScheduledCheck check = new ScheduledCheck
 			{
 				Folder = folder,
 				Frequency = (CheckFrequency)_frequency.SelectedIndex,
 				Day = _frequency.SelectedIndex == (int)CheckFrequency.Weekly ? (DayOfWeek)_day.SelectedIndex : DayOfWeek.Sunday,
 				DayOfMonth = _frequency.SelectedIndex == (int)CheckFrequency.Monthly ? _day.SelectedIndex + 1 : 1,
-				Time = new TimeSpan(_time.Value.Hour, _time.Value.Minute, 0)
+				Time = time
 			};
 
 			try

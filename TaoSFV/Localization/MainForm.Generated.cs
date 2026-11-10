@@ -470,6 +470,9 @@ namespace TaoSFV.Localization
         ///<summary>Task Scheduler couldn&apos;t save the change:\n\n{0}</summary>
         public string ScheduleChecks_Error { get; set; }
 
+        ///<summary>&quot;{0}&quot; isn't a time of day. Enter it like {1}.</summary>
+        public string ScheduleChecks_BadTime { get; set; }
+
         ///<summary>Failed Files Not Deleted</summary>
         public string NotRecycled_Title { get; set; }
 

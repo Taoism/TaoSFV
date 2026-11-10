@@ -227,6 +227,9 @@ namespace TaoSFV
 				_touched.Remove(control);
 			}
 
+			// buttons, check boxes, radio buttons and progress bars: dark grey instead of white outlines
+			DarkPainting.Hook(control);
+
 			ToolStrip toolStrip = control as ToolStrip;
 			if (toolStrip != null)
 			{
@@ -258,7 +261,8 @@ namespace TaoSFV
 			Rectangle rect = new Rectangle(Point.Empty, item.Size);
 			using (Pen back = new Pen(item.Owner.BackColor))
 				e.Graphics.DrawRectangle(back, rect.X, rect.Y, rect.Width - 1, rect.Height - 1);
-			using (Pen border = new Pen(SystemColors.ControlDark))
+			// ControlDark is a light gray in dark mode: a fixed dark grey instead
+			using (Pen border = new Pen(DarkPainting.Border))
 				e.Graphics.DrawRectangle(border, rect.X + 1, rect.Y + 1, rect.Width - 3, rect.Height - 3);
 		}
 	}

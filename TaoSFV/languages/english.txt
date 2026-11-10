@@ -196,6 +196,7 @@ ScheduleChecks_WeeklyAt                           = Every {1} at {0:t}
 ScheduleChecks_MonthlyAt                          = Day {1} of every month at {0:t}
 ScheduleChecks_FolderNotFound                     = The folder '{0}' doesn't exist.
 ScheduleChecks_Error                              = Task Scheduler couldn't save the change:\n\n{0}
+ScheduleChecks_BadTime                            = "{0}" isn't a time of day. Enter it like {1}.
 NotRecycled_Title                                 = Failed Files Not Deleted
 NotRecycled_Message                               = {0:#,0} failed file(s) weren't deleted: the Recycle Bin can't hold paths of 260 characters or more, so they were left in place. Delete them yourself, or turn off "Use Recycle Bin" to delete such files permanently.\n\n{1}
 UnreadableChecksumFile_Title                      = Checksum File Not Read
