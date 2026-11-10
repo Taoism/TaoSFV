@@ -34,7 +34,8 @@ taosfv-cli create sha256 D:\Music\album\album.sha256 D:\Music\album
 - Exit code 0 when every file is OK, 1 when any is bad, missing or unreadable, 2 for bad arguments or an unreadable checksum file, 130 on Ctrl+C.
 - `--quiet` prints only problems and the summary; `--status` prints nothing.
 - `--threads N` overrides how many files are read at once.
-- Verifying never renames, deletes or creates files and doesn't use the result cache.
+- Verifying never renames, deletes or creates files.
+- `--use-cache` reuses TaoSFV's result cache (`%LOCALAPPDATA%\TaoSFV\cache.db`): a file whose size and modified time haven't changed since it was last checked counts as OK without being read, and new results are added. Faster, but it won't notice damage that left both unchanged. Without the option, every file is read.
 - `create` writes md5sum-style files with `/` separators and LF line endings, so `md5sum -c` and `sha256sum -c` read them.
 
 ## Building
@@ -69,7 +70,8 @@ dotnet test TaoSFV.Tests
 - The file list is a virtual list, so sets with thousands of files load and update instantly (3,000 files: create 32.7 s -> 0.9 s, verify 8.3 s -> 0.9 s). Sets are shown with header rows.
 - Cache writes are batched in transactions.
 - Fixed an intermittent startup error ("A generic error occurred in GDI+") that left the main window invisible.
-- Links that pointed at the defunct cdtag.com (web, update check, bug reports) now go to the original ilSFV GitHub repository.
+- Links that pointed at the defunct cdtag.com (web, bug reports) now go to the original ilSFV GitHub repository; the update check that used it is removed.
+- The default comments header written into new checksum files says "Using TaoSFV" and links to https://github.com/Taoism/TaoSFV. An unchanged ilSFV default header is updated automatically; a custom one is only changed if you agree after importing ilSFV's settings.
 
 ## Project Status
 

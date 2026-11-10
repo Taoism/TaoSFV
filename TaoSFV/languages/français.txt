@@ -31,7 +31,6 @@ Menu_File_NewMD5File                              = Nouveau Ficier &MD5...
 Menu_File_NewSHA1File                             = Nouveau Ficier SH&A-1...
 Menu_File_Open                                    = &Ouvrir...
 Menu_File_Preferences                             = &Préférences...
-Menu_File_CheckForUpdates                         = *Check For &Updates
 Menu_File_Exit                                    = &Quitter
 
 Menu_Legend                                       = &Légende
@@ -70,10 +69,6 @@ HideButton                                        = Cacher
 GoButton                                          = &Go
 StopButton                                        = &Stop
 
-UpdateAvailable_Message                           = *A new version of TaoSFV ({0}.{1}.{2}) is available.\n\nWould you like to download it now?
-UpdateAvailable_Title                             = *Update Available
-NoUpdateAvailable_Message                         = *You have the latest version.
-NoUpdateAvailable_Title                           = *Check For Updates
 
 FileNotFound_Message                              = *File '{0}' does not exist.
 FileNotFound_Title                                = Fichier non trouvé
@@ -136,8 +131,6 @@ ClearCacheButton                                  = *Clear Cache
 AlwaysOnTop                                       = Toujours visible
 RememberWindowPlacement                           = Garder position de la fenêtre
 ReuseWindowSingleInstance                         = Autoriser une seule instance
-CheckForUpdateEvery                               = *Check for updates every
-Days                                              = *days
 ShowRecentFilesInFileMenu                         = *Show recent files in File menu
 FlashWindowWhenDone                               = Clignotement quand termminé
 AutoScrollFileList                                = Défilement automatique

@@ -29,12 +29,6 @@ namespace TaoSFV.Localization
         ///<summary>Reuse window (single instance)</summary>
         public string ReuseWindowSingleInstance { get; set; }
 
-        ///<summary>Check for updates every</summary>
-        public string CheckForUpdateEvery { get; set; }
-
-        ///<summary>days</summary>
-        public string Days { get; set; }
-
         ///<summary>Show recent files in File menu</summary>
         public string ShowRecentFilesInFileMenu { get; set; }
 

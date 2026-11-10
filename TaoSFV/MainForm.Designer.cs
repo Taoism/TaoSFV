@@ -43,8 +43,6 @@
             this.miSaveResults = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.miPreferences = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.miCheckForUpdates = new System.Windows.Forms.ToolStripMenuItem();
             this.miDocumentSeparator = new System.Windows.Forms.ToolStripSeparator();
             this.miDocument1 = new System.Windows.Forms.ToolStripMenuItem();
             this.miDocument2 = new System.Windows.Forms.ToolStripMenuItem();
@@ -146,8 +144,6 @@
             this.miSaveResults,
             this.toolStripSeparator3,
             this.miPreferences,
-            this.toolStripSeparator1,
-            this.miCheckForUpdates,
             this.miDocumentSeparator,
             this.miDocument1,
             this.miDocument2,
@@ -239,18 +235,6 @@
             this.miPreferences.Size = new System.Drawing.Size(210, 22);
             this.miPreferences.Text = "&Preferences...";
             this.miPreferences.Click += new System.EventHandler(this.miPreferences_Click);
-            // 
-            // toolStripSeparator1
-            // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(207, 6);
-            // 
-            // miCheckForUpdates
-            // 
-            this.miCheckForUpdates.Name = "miCheckForUpdates";
-            this.miCheckForUpdates.Size = new System.Drawing.Size(210, 22);
-            this.miCheckForUpdates.Text = "Check For &Updates";
-            this.miCheckForUpdates.Click += new System.EventHandler(this.miCheckForUpdates_Click);
             // 
             // miDocumentSeparator
             // 
@@ -910,8 +894,6 @@
 		private System.Windows.Forms.ToolStripMenuItem miDocument3;
 		private System.Windows.Forms.ToolStripMenuItem miDocument4;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
-		private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-		private System.Windows.Forms.ToolStripMenuItem miCheckForUpdates;
 		private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
 		private System.Windows.Forms.ToolStripMenuItem miRegisterFileTypes;
 		private System.Windows.Forms.ToolStripMenuItem miUnregisterFileTypes;

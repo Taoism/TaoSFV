@@ -130,7 +130,7 @@
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="chkIsRecentFilesSaved.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 206</value>
+    <value>6, 183</value>
   </data>
   <data name="chkIsRecentFilesSaved.Size" type="System.Drawing.Size, System.Drawing">
     <value>166, 17</value>
@@ -180,54 +180,6 @@
   <data name="&gt;&gt;chkUseLowPriorityOnHide.ZOrder" xml:space="preserve">
     <value>1</value>
   </data>
-  <data name="txtCheckForUpdatesDays.Location" type="System.Drawing.Point, System.Drawing">
-    <value>146, 181</value>
-  </data>
-  <data name="txtCheckForUpdatesDays.Size" type="System.Drawing.Size, System.Drawing">
-    <value>27, 20</value>
-  </data>
-  <data name="txtCheckForUpdatesDays.TabIndex" type="System.Int32, mscorlib">
-    <value>26</value>
-  </data>
-  <data name="&gt;&gt;txtCheckForUpdatesDays.Name" xml:space="preserve">
-    <value>txtCheckForUpdatesDays</value>
-  </data>
-  <data name="&gt;&gt;txtCheckForUpdatesDays.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;txtCheckForUpdatesDays.Parent" xml:space="preserve">
-    <value>tpGeneral</value>
-  </data>
-  <data name="&gt;&gt;txtCheckForUpdatesDays.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="lblDays.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="lblDays.Location" type="System.Drawing.Point, System.Drawing">
-    <value>175, 184</value>
-  </data>
-  <data name="lblDays.Size" type="System.Drawing.Size, System.Drawing">
-    <value>29, 13</value>
-  </data>
-  <data name="lblDays.TabIndex" type="System.Int32, mscorlib">
-    <value>41</value>
-  </data>
-  <data name="lblDays.Text" xml:space="preserve">
-    <value>days</value>
-  </data>
-  <data name="&gt;&gt;lblDays.Name" xml:space="preserve">
-    <value>lblDays</value>
-  </data>
-  <data name="&gt;&gt;lblDays.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;lblDays.Parent" xml:space="preserve">
-    <value>tpGeneral</value>
-  </data>
-  <data name="&gt;&gt;lblDays.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
   <data name="btnClearCache.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Right</value>
   </data>
@@ -254,36 +206,6 @@
   </data>
   <data name="&gt;&gt;btnClearCache.ZOrder" xml:space="preserve">
     <value>4</value>
-  </data>
-  <data name="chkCheckForUpdates.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="chkCheckForUpdates.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="chkCheckForUpdates.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 183</value>
-  </data>
-  <data name="chkCheckForUpdates.Size" type="System.Drawing.Size, System.Drawing">
-    <value>142, 17</value>
-  </data>
-  <data name="chkCheckForUpdates.TabIndex" type="System.Int32, mscorlib">
-    <value>25</value>
-  </data>
-  <data name="chkCheckForUpdates.Text" xml:space="preserve">
-    <value>Check for updates every</value>
-  </data>
-  <data name="&gt;&gt;chkCheckForUpdates.Name" xml:space="preserve">
-    <value>chkCheckForUpdates</value>
-  </data>
-  <data name="&gt;&gt;chkCheckForUpdates.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;chkCheckForUpdates.Parent" xml:space="preserve">
-    <value>tpGeneral</value>
-  </data>
-  <data name="&gt;&gt;chkCheckForUpdates.ZOrder" xml:space="preserve">
-    <value>5</value>
   </data>
   <data name="chkRecursive.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>

@@ -32,9 +32,6 @@ namespace TaoSFV.Localization
         ///<summary>&Preferences...</summary>
         public string Menu_File_Preferences { get; set; }
 
-        ///<summary>Check For &Updates</summary>
-        public string Menu_File_CheckForUpdates { get; set; }
-
         ///<summary>E&xit</summary>
         public string Menu_File_Exit { get; set; }
 
@@ -136,18 +133,6 @@ namespace TaoSFV.Localization
 
         ///<summary>&Stop</summary>
         public string StopButton { get; set; }
-
-        ///<summary>A new version of TaoSFV ({0}.{1}.{2}) is available.\n\nWould you like to download it now?</summary>
-        public string UpdateAvailable_Message { get; set; }
-
-        ///<summary>Update Available</summary>
-        public string UpdateAvailable_Title { get; set; }
-
-        ///<summary>You have the latest version.</summary>
-        public string NoUpdateAvailable_Message { get; set; }
-
-        ///<summary>Check For Updates</summary>
-        public string NoUpdateAvailable_Title { get; set; }
 
         ///<summary>File '{0}' does not exist.</summary>
         public string FileNotFound_Message { get; set; }
@@ -265,6 +250,12 @@ namespace TaoSFV.Localization
 
         ///<summary>ilSFV's settings couldn't be imported.\n\n{0}</summary>
         public string ImportIlsfv_Error_Message { get; set; }
+
+        ///<summary>Update Comments</summary>
+        public string UpdateCommentsTemplate_Title { get; set; }
+
+        ///<summary>The comments written at the top of new checksum files still mention ilSFV:\n\n{0}\n\nChange ilSFV to TaoSFV and cdtag.com links to TaoSFV's page?</summary>
+        public string UpdateCommentsTemplate_Message { get; set; }
 
         ///<summary>Checksum Files Skipped</summary>
         public string SkippedChecksumFiles_Title { get; set; }

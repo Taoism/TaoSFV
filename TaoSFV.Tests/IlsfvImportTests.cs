@@ -43,7 +43,7 @@ namespace TaoSFV.Tests
 		}
 
 		// the ilSFV 1.11 schema (settings version 9), with non-default values
-		private void CreateIlsfvSettings()
+		private void CreateIlsfvSettings(string header = " My header")
 		{
 			using (SqlCeConnection c = CreateSdf(Path.Combine(_ilsfv, "settings.sdf")))
 			{
@@ -65,7 +65,11 @@ Renaming nvarchar(50) not null, AutoVerify bit not null, PlaySoundOK bit not nul
 MD5SumCompatibility bit not null, PromptForFileName bit not null, AutoCloseWhenDoneCreating bit not null, CreateForEachSubDir bit not null)");
 				Exec(c, "insert into Creating values('.sfv;.md5;.sha1;.par;.bad;.missing', 1, 1, 1, 1, 1, 1)");
 				Exec(c, "create table Comments (ID int primary key identity, WriteComments bit not null, Header nvarchar(2048) not null, Content nvarchar(512) not null, Footer nvarchar(2048) not null)");
-				Exec(c, "insert into Comments (WriteComments, Header, Content, Footer) values(1, ' My header', '{2}', ' footer')");
+				using (SqlCeCommand cmd = new SqlCeCommand("insert into Comments (WriteComments, Header, Content, Footer) values(1, @Header, '{2}', ' footer')", c))
+				{
+					cmd.Parameters.AddWithValue("@Header", header);
+					cmd.ExecuteNonQuery();
+				}
 				Exec(c, "create table RecentFile (ID int primary key identity, Path nvarchar(1024) not null)");
 				foreach (string path in new[] { @"K:\a\one.sfv", @"K:\b\two.sfv", @"K:\c\three.sfv", @"K:\d\four.sfv", @"K:\e\five.sfv" })
 					Exec(c, "insert into RecentFile (Path) values('" + path + "')");
@@ -170,6 +174,17 @@ MD5SumCompatibility bit not null, PromptForFileName bit not null, AutoCloseWhenD
 			// ilSFV's files are untouched (the import reads copies)
 			Assert.True(File.Exists(Path.Combine(_ilsfv, "settings.sdf")));
 			Assert.Equal(new[] { "cache.sdf", "settings.sdf" }, Array.ConvertAll(Directory.GetFiles(_ilsfv), Path.GetFileName));
+		}
+
+		[Fact]
+		public void Import_ReplacesIlsfvsDefaultCommentsHeader()
+		{
+			CreateIlsfvSettings(" Using ilSFV on {0:yyyy-MM-dd} at {0:HH:mm.ss}\r\n http://cdtag.com/ilsfv");
+			using (SqliteConnection settings = NewTaoSfvDatabase("settings.db", true))
+			{
+				IlsfvImport.Import(_ilsfv, settings, () => { throw new InvalidOperationException("cache shouldn't be opened"); });
+				Assert.Equal(CommentTemplate.DefaultHeader, Row(settings, "select Header from Comments")["Header"]);
+			}
 		}
 
 		[Fact]

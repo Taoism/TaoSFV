@@ -28,16 +28,9 @@ namespace TaoSFV.Model.Settings
 		public FormWindowState FormWindowState { get; set; }
 		public AppTheme Theme { get; set; }
 
-		public bool CheckForUpdates { get; set; }
-		public DateTime? LastUpdateCheck { get; set; }
-		public int UpdateCheckFrequency { get; set; }
-
 		public void Save()
 		{
 			const string updateSql = @"update General set
-CheckForUpdates = @CheckForUpdates,
-LastUpdateCheck = @LastUpdateCheck,
-UpdateCheckFrequency = @UpdateCheckFrequency,
 Language = @Language,
 CacheSize = @CacheSize,
 AlwaysOnTop = @AlwaysOnTop,
@@ -61,9 +54,6 @@ Theme = @Theme
 
 			using (SqliteCommand cmd = new SqliteCommand(updateSql, Program.GetOpenSettingsConnection()))
 			{
-				cmd.AddParameter("@CheckForUpdates", CheckForUpdates);
-				cmd.AddParameter("@LastUpdateCheck", LastUpdateCheck);
-				cmd.AddParameter("@UpdateCheckFrequency", UpdateCheckFrequency);
 				cmd.AddParameter("@Language", Language);
 				cmd.AddParameter("@CacheSize", CacheSize);
 				cmd.AddParameter("@AlwaysOnTop", AlwaysOnTop);
@@ -116,16 +106,11 @@ Theme = @Theme
 			WindowLeft = Convert.ToInt32(dr["WindowLeft"]);
 			WindowTop = Convert.ToInt32(dr["WindowTop"]);
 			FormWindowState = (FormWindowState)Enum.Parse(typeof(FormWindowState), Convert.ToString(dr["FormWindowState"]));
-			CheckForUpdates = Convert.ToBoolean(dr["CheckForUpdates"]);
-			UpdateCheckFrequency = Convert.ToInt32(dr["UpdateCheckFrequency"]);
 			UseLowPriorityOnHide = Convert.ToBoolean(dr["UseLowPriorityOnHide"]);
             IsRecentFilesSaved = Convert.ToBoolean(dr["IsRecentFilesSaved"]);
 
 			AppTheme theme;
 			Theme = Enum.TryParse(Convert.ToString(dr["Theme"]), out theme) ? theme : AppTheme.System;
-
-			object lastUpdateCheck = dr["LastUpdateCheck"];
-			LastUpdateCheck = DBNull.Value.Equals(lastUpdateCheck) ? (DateTime?)null : Convert.ToDateTime(lastUpdateCheck);
 		}
 	}
 

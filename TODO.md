@@ -13,8 +13,9 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 - [x] **Per-set overhead when checking.** Each set costs ~90 ms even when its files are all missing (2,000 such
       sets: 3 minutes): the result loop in `ProcessFilesAsync` polls every 50 ms, and with Find Renamed Files on,
       `_files_missing` is a run total, so every set after the first with a missing file is searched for renames.
-- [ ] **Dead update check.** Preferences still offers "Check for updates every N days" and the code calls the
+- [x] **Dead update check.** Preferences still offers "Check for updates every N days" and the code calls the
       defunct cdtag.com. Either remove it or point it at GitHub Releases (needs the repo below).
+      (Removed: menu item, preference and code. A GitHub Releases check can come back once the repo exists.)
 - [x] **Recycle Bin with long paths.** Now uses `IFileOperation` (`Tools/RecycleBin.cs`), but switching didn't
       help: the Recycle Bin itself can't hold a path of 260+ characters, and the shell then deletes the file
       permanently (tested on Windows 11 with long paths enabled, and via 8.3 short names). Such files are left in
@@ -34,7 +35,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 - [x] **Parallel reads setting.** Preferences option to override the automatic choice (4 on SSDs, 1 on hard
       drives/shares), e.g. for RAID arrays or slow USB sticks. The CLI already has `--threads`.
 - [ ] **Faster hash types.** XXH3 and/or BLAKE3 as options for large libraries (less widely supported elsewhere).
-- [ ] **CLI cache option.** `taosfv-cli verify --use-cache` to reuse the GUI's checksum cache (it never uses it now).
+- [x] **CLI cache option.** `taosfv-cli verify --use-cache` to reuse the GUI's checksum cache (it never uses it now).
 - [ ] **Where Create puts the file for a folder.** Right-click a folder > Create SFV writes `<parent>\<parent>.sfv`
       (ilSFV's behaviour). Consider writing `<folder>\<folder>.sfv` instead, or asking.
 - [ ] **PAR2 repair (large).** Rebuild damaged files from recovery data, QuickPar-style, not just detect them.
@@ -46,8 +47,10 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       "Try running as Administrator" from their registration error text.
 - [x] **Switch theme without restarting.**
 - [x] **Sharper text on high-DPI screens.** Windows are laid out in fixed pixels and run system-DPI-aware.
-- [ ] **Comments template after importing.** Offer to update a header that still says "ilSFV" or links to
+- [x] **Comments template after importing.** Offer to update a header that still says "ilSFV" or links to
       cdtag.com. (This machine's TaoSFV template says "Using ilSFV" because its database predates the rename.)
+      (Done: untouched old defaults become "Using TaoSFV ... https://github.com/Taoism/TaoSFV" automatically
+      (settings version 4, and on import); a header the user wrote is shown after an import with an offer to update.)
 - [x] **Make the README and release notes match the About tab.** About now says "TaoSFV made in tribute to ilSFV
       and hkSFV, Thanks Jud!", but two places still say "a tribute to ilSFV and rekSFV": the README intro
       (`README.md`, line 7) and the TaoSFV 2.0 entry in the release notes (`TaoSFV/ReleaseNotesForm.resx`).
@@ -62,7 +65,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 
 ## Code health
 
-- [ ] **Remove dead code:** `Tools/Http.cs`, `Tools/PostData.cs`, the registry reflection helpers in `Program.cs`
+- [x] **Remove dead code:** `Tools/Http.cs`, `Tools/PostData.cs`, the registry reflection helpers in `Program.cs`
       (rely on .NET Framework internals), the old update-check code.
 - [x] **Cache lookups.** `GetCache` matches `FileName like @Directory || '%'`; SQLite's case-insensitive LIKE can't
       use the index, so each set scans the whole table (35,000 rows with imported ilSFV settings).
@@ -71,7 +74,8 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
 ## Release
 
 - [ ] **TaoSFV GitHub repo.** Create it, push the `taosfv` branch, and repoint the Web button, bug reports and
-      update link (they still go to judwhite/ilSFV).
+      update link (they still go to judwhite/ilSFV). The default comments header already links to
+      https://github.com/Taoism/TaoSFV.
 - [ ] **Packaging.** Self-contained single-file build (no .NET install needed), code signing (avoids SmartScreen
       warnings), a modernized installer, and a winget listing.
 - [ ] **ARM64.** Builds are x64 only; the ilSFV import's SQL Server Compact engine only exists for x64/x86.

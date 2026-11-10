@@ -332,65 +332,6 @@ export results to text file
             _timer.Enabled = false;
 
             SetAlwaysOnTop();
-
-            if (Program.Settings.General.CheckForUpdates)
-            {
-                if (Program.Settings.General.LastUpdateCheck + TimeSpan.FromDays(Program.Settings.General.UpdateCheckFrequency) < DateTime.Now)
-                {
-                    try
-                    {
-                        CheckForUpdates(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        // error checking for updates
-                        Trace.WriteLine(ex);
-                    }
-                }
-            }
-        }
-
-        private static void CheckForUpdates(bool verbose)
-        {
-            if (verbose)
-                Cursor.Current = Cursors.WaitCursor;
-
-            string content = Encoding.ASCII.GetString(Http.Get("http://cdtag.com/taosfv/version.txt"));
-            string[] strparts = content.Split(new[] { ';', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            int[] parts = strparts.Select(p => p.Length < 5 ? int.Parse(p) : -1).ToArray();
-            Version version = Assembly.GetExecutingAssembly().GetName().Version;
-            int major = version.Major;
-            int minor = version.Minor;
-            int build = version.Build;
-
-            if (verbose)
-                Cursor.Current = Cursors.Default;
-
-            if (major < parts[0] ||
-                (major == parts[0] && minor < parts[1]) ||
-                (major == parts[0] && minor == parts[1] && build < parts[2]))
-            {
-                DialogResult res = MessageBox.Show(
-                    string.Format(Language.MainForm.UpdateAvailable_Message, parts[0], parts[1], parts[2]),
-                    Language.MainForm.UpdateAvailable_Title,
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question
-                );
-
-                if (res == DialogResult.Yes)
-                {
-                    Program.OpenUrl(strparts[3]);
-                }
-            }
-            else
-            {
-                if (verbose)
-                {
-                    MessageBox.Show(Language.MainForm.NoUpdateAvailable_Message, Language.MainForm.NoUpdateAvailable_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
-
-            Program.Settings.General.LastUpdateCheck = DateTime.Now;
         }
 
         /// <summary>
@@ -2290,11 +2231,6 @@ export results to text file
             EngageDropTimer(new List<string> { ((ToolStripMenuItem)sender).Tag.ToString() });
         }
 
-        private void miCheckForUpdates_Click(object sender, EventArgs e)
-        {
-            CheckForUpdates(true);
-        }
-
         private void miRegisterFileTypes_Click(object sender, EventArgs e)
         {
             Cursor.Current = Cursors.WaitCursor;
@@ -2622,7 +2558,6 @@ export results to text file
             miVerifyFolder.Text = p.Menu_File_VerifyFolder;
             miSaveResults.Text = p.Menu_File_SaveResults;
             miPreferences.Text = p.Menu_File_Preferences;
-            miCheckForUpdates.Text = p.Menu_File_CheckForUpdates;
             miExit.Text = p.Menu_File_Exit;
 
             // Legend

@@ -28,8 +28,8 @@ Usage:
 verify
   Checks each checksum file given. A folder is searched (with subfolders) for
   .sfv, .md5, .sha1, .sha256 and .sha512 files. Nothing is renamed, deleted or
-  created. Prints 'name: OK', 'name: FAILED', 'name: MISSING' or
-  'name: READ ERROR', then a summary.
+  created (--use-cache adds cache entries). Prints 'name: OK', 'name: FAILED',
+  'name: MISSING' or 'name: READ ERROR', then a summary.
 
 create
   Hashes the given files (folders include their subfolders) and writes the
@@ -42,6 +42,11 @@ Options:
   -s, --status      verify: print nothing; use the exit code
   -t, --threads N   files to read at once (default: 4 on SSDs, 1 on hard
                     drives and network shares)
+      --use-cache   verify: reuse TaoSFV's result cache. A file whose size and
+                    modified time haven't changed since TaoSFV last read it is
+                    taken as OK without reading it again (faster, but won't
+                    notice damage that left both unchanged); new results are
+                    added to the cache
   -h, --help        show this help
 
 Exit codes:
@@ -140,9 +145,24 @@ Exit codes:
 				}
 			}
 
+			bool useCache = false;
+			if (options.UseCache)
+			{
+				try
+				{
+					useCache = SharedCache.TryOpen(SharedCache.DefaultFile);
+					if (!useCache)
+						Console.Error.WriteLine("taosfv-cli: no TaoSFV cache yet (" + SharedCache.DefaultFile + "); checking without it");
+				}
+				catch (Exception ex)
+				{
+					Console.Error.WriteLine("taosfv-cli: can't open the cache (" + ex.Message + "); checking without it");
+				}
+			}
+
 			Stopwatch stopwatch = Stopwatch.StartNew();
 			VerifyContext context = new VerifyContext(_cancel.Token);
-			VerifyOptions verifyOptions = VerifyOptions.ReadOnly(false);
+			VerifyOptions verifyOptions = VerifyOptions.ReadOnly(useCache);
 			long totalBytes = sets.Sum(s => s.TotalSize);
 			int ok = 0, bad = 0, missing = 0, unreadable = 0;
 
@@ -150,6 +170,20 @@ Exit codes:
 			{
 				Dictionary<ChecksumFile, string> errors = new Dictionary<ChecksumFile, string>();
 				int parallelism = options.Threads ?? DiskInfo.GetParallelism(set.Directory);
+				IReadOnlyDictionary<string, ChecksumFile> cache = null;
+				if (useCache)
+				{
+					try
+					{
+						cache = FileVerifier.LoadCache(set, verifyOptions);
+					}
+					catch (Exception ex)
+					{
+						Console.Error.WriteLine("taosfv-cli: can't read the cache (" + ex.Message + "); checking without it");
+						useCache = false;
+						verifyOptions = VerifyOptions.ReadOnly(false);
+					}
+				}
 
 				using (Timer progress = StartProgress(context, totalBytes))
 				{
@@ -157,7 +191,7 @@ Exit codes:
 					{
 						try
 						{
-							FileVerifier.Verify(set, file, verifyOptions, null, context);
+							FileVerifier.Verify(set, file, verifyOptions, cache, context);
 						}
 						catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
 						{
@@ -207,6 +241,9 @@ Exit codes:
 						Console.WriteLine(line);
 				}
 			}
+
+			if (useCache)
+				SharedCache.Flush();
 
 			stopwatch.Stop();
 			if (!options.Status)
@@ -382,6 +419,7 @@ Exit codes:
 			public bool Quiet;
 			public bool Status;
 			public int? Threads;
+			public bool UseCache;
 
 			/// <summary>False with a null error means help was requested.</summary>
 			public static bool TryParse(string[] args, out Options options, out string error)
@@ -417,6 +455,9 @@ Exit codes:
 							}
 							options.Threads = threads;
 							break;
+						case "--use-cache":
+							options.UseCache = true;
+							break;
 						default:
 							if (arg.StartsWith("--") || (arg.StartsWith("-") && arg.Length > 1))
 							{
@@ -447,6 +488,11 @@ Exit codes:
 				}
 				else if (options.Command == "create")
 				{
+					if (options.UseCache)
+					{
+						error = "--use-cache only applies to verify";
+						return false;
+					}
 					if (positional.Count < 4)
 					{
 						error = "create needs a type, an output file and at least one file or folder";

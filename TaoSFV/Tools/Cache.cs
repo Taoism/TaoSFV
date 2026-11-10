@@ -28,10 +28,26 @@ namespace TaoSFV
 		private static Thread _writer;
 		private static int _inFlight;
 
-		// false when settings aren't loaded (unit tests) or the cache is turned off
+		private static volatile bool _standalone;
+
+		// false when settings aren't loaded (unit tests) or the cache is turned off; always true once opened standalone
 		private static bool IsEnabled
 		{
-			get { return Program.Settings != null && Program.Settings.General.UseCachedResults; }
+			get { return _standalone || (Program.Settings != null && Program.Settings.General.UseCachedResults); }
+		}
+
+		/// <summary>Opens a cache file without loading settings (taosfv-cli --use-cache, tests).</summary>
+		internal static void OpenStandalone(string cacheFile)
+		{
+			Program.OpenCacheOnly(cacheFile);
+			_standalone = true;
+		}
+
+		/// <summary>Stops using a cache opened with OpenStandalone (tests).</summary>
+		internal static void CloseStandalone()
+		{
+			Flush();
+			_standalone = false;
 		}
 
 		private static void Clear(string tableName)

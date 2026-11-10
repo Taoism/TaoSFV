@@ -209,69 +209,6 @@ namespace TaoSFV
             }
         }
 
-        private static void RegEnableReflectionKey(RegistryKey key, string path)
-        {
-            RegistryKey openedKey;
-            IntPtr handle = GetRegistryHandle(key, path, out openedKey);
-            if (handle != IntPtr.Zero)
-            {
-                RegEnableReflectionKey(handle);
-                openedKey.Close();
-            }
-        }
-
-        private static IntPtr GetRegistryHandle(RegistryKey key, string path, out RegistryKey openedKey)
-        {
-            string[] parts = path.Split('\\');
-
-            openedKey = null;
-            
-            if (parts == null || parts.Length == 0)
-            {
-                return IntPtr.Zero;
-            }
-
-            IntPtr handle = IntPtr.Zero;
-            foreach (string part in parts)
-            {
-                key = _openSubKey(key, part, true, RegWow64Options.KEY_WOW64_32KEY, out handle);
-                if (key == null)
-                    return IntPtr.Zero;
-            }
-
-            return handle;
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool IsWow64Process(
-            [In] IntPtr hProcess,
-            [Out] out bool wow64Process
-        );
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool InternalCheckIsWow64()
-        {
-            if ((Environment.OSVersion.Version.Major == 5 && Environment.OSVersion.Version.Minor >= 1) ||
-                Environment.OSVersion.Version.Major >= 6)
-            {
-                using (Process p = Process.GetCurrentProcess())
-                {
-                    bool retVal;
-                    if (!IsWow64Process(p.Handle, out retVal))
-                    {
-                        return false;
-                    }
-                    return retVal;
-                }
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-
         public static ProgramSettings Settings { get; private set; }
 
         private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
@@ -308,6 +245,23 @@ namespace TaoSFV
         public static SqliteConnection GetOpenCacheConnection()
         {
             return Database.Open(_cacheFile);
+        }
+
+        /// <summary>Where TaoSFV keeps its checksum cache: %LOCALAPPDATA%\TaoSFV\cache.db.</summary>
+        public static string DefaultCacheFile
+        {
+            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TaoSFV", "cache.db"); }
+        }
+
+        /// <summary>
+        /// Uses only the checksum cache, without loading settings (taosfv-cli). The file must exist: creating
+        /// TaoSFV's folder would make the GUI skip its first-run setup.
+        /// </summary>
+        internal static void OpenCacheOnly(string cacheFile)
+        {
+            _cacheFile = cacheFile;
+            using (SqliteConnection conn = GetOpenCacheConnection())
+                Database.UpgradeCache(conn);
         }
 
         public static SqliteConnection GetOpenSettingsConnection()
@@ -369,7 +323,29 @@ namespace TaoSFV
             Cursor.Current = Cursors.Default;
             MessageBox.Show(owner, string.Format(lang.ImportIlsfv_Done_Message, result.FilesChecked, result.RecentFiles, result.CacheEntries),
                 lang.ImportIlsfv_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            OfferCommentTemplateUpdate(owner);
             return true;
+        }
+
+        /// <summary>
+        /// A comments header or footer written in ilSFV that names ilSFV or links to cdtag.com: shows it and offers to
+        /// change the name to TaoSFV and the links to TaoSFV's page. (Untouched defaults are replaced without asking.)
+        /// </summary>
+        private static void OfferCommentTemplateUpdate(IWin32Window owner)
+        {
+            CommentSettings comments = Settings.Comments;
+            if (!CommentTemplate.IsOutdated(comments.Header) && !CommentTemplate.IsOutdated(comments.Footer))
+                return;
+
+            string shown = (comments.Header + Environment.NewLine + comments.Footer).Trim();
+            var lang = Language.MainForm;
+            if (MessageBox.Show(owner, string.Format(lang.UpdateCommentsTemplate_Message, shown), lang.UpdateCommentsTemplate_Title,
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            comments.Header = CommentTemplate.Modernize(comments.Header);
+            comments.Footer = CommentTemplate.Modernize(comments.Footer);
+            comments.Save();
         }
 
         public static void OpenUrl(string url)
@@ -400,161 +376,5 @@ namespace TaoSFV
             Trace.WriteLine(string.Format("Couldn't move {0} to the Recycle Bin", fileName));
             return false;
         }
-
-        enum RegWow64Options
-        {
-            None = 0,
-            KEY_WOW64_64KEY = 0x0100,
-            KEY_WOW64_32KEY = 0x0200
-        }
-
-        enum RegistryRights
-        {
-            ReadKey = 131097,
-            WriteKey = 131078
-        }
-
-        private static RegistryKey _openSubKey(RegistryKey parentKey, string subKeyName, bool writable, RegWow64Options options, out IntPtr subKeyHandle)
-        {
-            //Sanity check
-            if (parentKey == null || _getRegistryKeyHandle(parentKey) == IntPtr.Zero)
-            {
-                subKeyHandle = IntPtr.Zero;
-                return null;
-            }
-
-            //Set rights
-            int rights = (int)RegistryRights.ReadKey;
-            if (writable)
-                rights = (int)RegistryRights.WriteKey;
-
-            //Call the native function >.<
-            int x, result = RegOpenKeyEx(_getRegistryKeyHandle(parentKey), subKeyName, 0, rights | (int)options, out x);
-            subKeyHandle = (IntPtr)result;
-
-            //If we errored, throw an exception
-            if (result != 0)
-            {
-                throw new System.ComponentModel.Win32Exception("Exception encountered opening registry key.");
-            }
-
-            //Get the key represented by the pointer returned by RegOpenKeyEx
-            RegistryKey subKey = _pointerToRegistryKey(subKeyHandle, writable, false);
-            return subKey;
-        }
-
-        /// <summary>
-        /// Get a pointer to a registry key.
-        /// </summary>
-        /// <param name="registryKey">Registry key to obtain the pointer of.</param>
-        /// <returns>Pointer to the given registry key.</returns>
-        private static IntPtr _getRegistryKeyHandle(RegistryKey registryKey)
-        {
-            //Get the type of the RegistryKey
-            Type registryKeyType = typeof(RegistryKey);
-            //Get the FieldInfo of the 'hkey' member of RegistryKey
-            System.Reflection.FieldInfo fieldInfo =
-            registryKeyType.GetField("hkey", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            //Get the handle held by hkey
-            SafeHandle handle = (SafeHandle)fieldInfo.GetValue(registryKey);
-            //Get the unsafe handle
-            IntPtr dangerousHandle = handle.DangerousGetHandle();
-            return dangerousHandle;
-        }
-
-        /// <summary>
-        /// Get a registry key from a pointer.
-        /// </summary>
-        /// <param name="hKey">Pointer to the registry key</param>
-        /// <param name="writable">Whether or not the key is writable.</param>
-        /// <param name="ownsHandle">Whether or not we own the handle.</param>
-        /// <returns>Registry key pointed to by the given pointer.</returns>
-        private static RegistryKey _pointerToRegistryKey(IntPtr hKey, bool writable, bool ownsHandle)
-        {
-            //Get the BindingFlags for private contructors
-            System.Reflection.BindingFlags privateConstructors = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
-            //Get the Type for the SafeRegistryHandle
-            Type safeRegistryHandleType = typeof(Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid).Assembly.GetType("Microsoft.Win32.SafeHandles.SafeRegistryHandle");
-            //Get the array of types matching the args of the ctor we want
-            Type[] safeRegistryHandleCtorTypes = new Type[] { typeof(IntPtr), typeof(bool) };
-            //Get the constructorinfo for our object
-            System.Reflection.ConstructorInfo safeRegistryHandleCtorInfo = safeRegistryHandleType.GetConstructor(
-            privateConstructors, null, safeRegistryHandleCtorTypes, null);
-            //Invoke the constructor, getting us a SafeRegistryHandle
-            Object safeHandle = safeRegistryHandleCtorInfo.Invoke(new Object[] { hKey, ownsHandle });
-
-            //Get the type of a RegistryKey
-            Type registryKeyType = typeof(RegistryKey);
-            //Get the array of types matching the args of the ctor we want
-            Type[] registryKeyConstructorTypes = new Type[] { safeRegistryHandleType, typeof(bool) };
-            //Get the constructorinfo for our object
-            System.Reflection.ConstructorInfo registryKeyCtorInfo = registryKeyType.GetConstructor(
-            privateConstructors, null, registryKeyConstructorTypes, null);
-            //Invoke the constructor, getting us a RegistryKey
-            RegistryKey resultKey = (RegistryKey)registryKeyCtorInfo.Invoke(new Object[] { safeHandle, writable });
-            //return the resulting key
-            return resultKey;
-        }
-
-        [DllImport("advapi32.dll", CharSet = CharSet.Auto)]
-        public static extern int RegOpenKeyEx(IntPtr hKey, string subKey, int ulOptions, int samDesired, out int phkResult);
-
-        [Flags]
-        public enum RegOption
-        {
-            NonVolatile = 0x0,
-            Volatile = 0x1,
-            CreateLink = 0x2,
-            BackupRestore = 0x4,
-            OpenLink = 0x8
-        }
-
-        [Flags]
-        public enum RegSAM
-        {
-            QueryValue = 0x0001,
-            SetValue = 0x0002,
-            CreateSubKey = 0x0004,
-            EnumerateSubKeys = 0x0008,
-            Notify = 0x0010,
-            CreateLink = 0x0020,
-            WOW64_32Key = 0x0200,
-            WOW64_64Key = 0x0100,
-            WOW64_Res = 0x0300,
-            Read = 0x00020019,
-            Write = 0x00020006,
-            Execute = 0x00020019,
-            AllAccess = 0x000f003f
-        }
-
-        public enum RegResult
-        {
-            CreatedNewKey = 0x00000001,
-            OpenedExistingKey = 0x00000002
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct SECURITY_ATTRIBUTES
-        {
-            public int nLength;
-            public IntPtr lpSecurityDescriptor;
-            public int bInheritHandle;
-        }
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        static extern int RegCreateKeyEx(
-                    int hKey,
-                    string lpSubKey,
-                    int Reserved,
-                    string lpClass,
-                    RegOption dwOptions,
-                    RegSAM samDesired,
-                    SECURITY_ATTRIBUTES lpSecurityAttributes,
-                    out int phkResult,
-                    out RegResult lpdwDisposition);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        static extern int RegEnableReflectionKey(IntPtr hBase);
     }
 }

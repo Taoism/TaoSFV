@@ -126,7 +126,12 @@ namespace TaoSFV
 					"ExcludeFilesOfType", "SortFiles", "SFV32Compatibility", "MD5SumCompatibility", "PromptForFileName",
 					"AutoCloseWhenDoneCreating", "CreateForEachSubDir"
 				});
-				CopyColumns(ReadRow(source, "Comments"), target, "Comments", new[] { "WriteComments", "Header", "Content", "Footer" });
+				// ilSFV's untouched default header says "Using ilSFV" and links to the defunct cdtag.com: take TaoSFV's
+				// instead. A header the user wrote is copied as is (TaoSFV offers to update it afterwards).
+				Dictionary<string, object> comments = ReadRow(source, "Comments");
+				if (comments != null && comments.ContainsKey("Header") && CommentTemplate.IsOldDefault(Convert.ToString(comments["Header"])))
+					comments["Header"] = CommentTemplate.DefaultHeader;
+				CopyColumns(comments, target, "Comments", new[] { "WriteComments", "Header", "Content", "Footer" });
 
 				// usage statistics carry on from ilSFV's totals
 				Dictionary<string, object> stats = ReadRow(source, "UsageStatistics");

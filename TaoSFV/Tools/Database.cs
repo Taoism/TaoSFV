@@ -9,7 +9,7 @@ namespace TaoSFV
 	/// </summary>
 	internal static class Database
 	{
-		public const int SettingsVersion = 3;
+		public const int SettingsVersion = 4;
 		public const int CacheVersion = 3;
 
 		public static SqliteConnection Open(string fileName)
@@ -125,6 +125,7 @@ create table General
 	WindowLeft integer not null,
 	WindowTop integer not null,
 	FormWindowState text not null,
+	-- the three update-check columns are unused (cdtag.com is gone); kept so older databases match
 	CheckForUpdates integer not null default 0,
 	LastUpdateCheck text null,
 	UpdateCheckFrequency integer not null default 7,
@@ -186,7 +187,7 @@ create table RecentFile
 ");
 					using (SqliteCommand cmd = new SqliteCommand("insert into Comments (WriteComments, Header, Content, Footer) values(1, @Header, @Content, '');", conn))
 					{
-						cmd.AddParameter("@Header", " Using TaoSFV on {0:yyyy-MM-dd} at {0:HH:mm.ss}" + Environment.NewLine + " https://github.com/judwhite/ilSFV");
+						cmd.AddParameter("@Header", CommentTemplate.DefaultHeader);
 						cmd.AddParameter("@Content", "{0,13:#,0}  {1:HH:mm.ss} {1:yyyy-MM-dd} {2}");
 						cmd.ExecuteNonQuery();
 					}
@@ -202,6 +203,22 @@ create table RecentFile
 				{
 					// files read at once while checking; 0 = automatic (by drive type)
 					Execute(conn, "alter table Checking add column ParallelReads integer not null default 0;");
+				}
+
+				if (version < 4 && version >= 1)
+				{
+					// a header still at the default from before the rename said "Using ilSFV"; one the user wrote is kept
+					string header;
+					using (SqliteCommand cmd = new SqliteCommand("select Header from Comments", conn))
+						header = Convert.ToString(cmd.ExecuteScalar());
+					if (CommentTemplate.IsOldDefault(header))
+					{
+						using (SqliteCommand cmd = new SqliteCommand("update Comments set Header = @Header;", conn))
+						{
+							cmd.AddParameter("@Header", CommentTemplate.DefaultHeader);
+							cmd.ExecuteNonQuery();
+						}
+					}
 				}
 
 				SetVersion(conn, SettingsVersion);

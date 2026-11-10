@@ -34,10 +34,7 @@
             this.tpGeneral = new System.Windows.Forms.TabPage();
             this.chkIsRecentFilesSaved = new System.Windows.Forms.CheckBox();
             this.chkUseLowPriorityOnHide = new System.Windows.Forms.CheckBox();
-            this.txtCheckForUpdatesDays = new System.Windows.Forms.TextBox();
-            this.lblDays = new System.Windows.Forms.Label();
             this.btnClearCache = new System.Windows.Forms.Button();
-            this.chkCheckForUpdates = new System.Windows.Forms.CheckBox();
             this.chkRecursive = new System.Windows.Forms.CheckBox();
             this.chkAutoScrollFileList = new System.Windows.Forms.CheckBox();
             this.chkFlashWindowWhenDone = new System.Windows.Forms.CheckBox();
@@ -142,10 +139,7 @@
             this.tpGeneral.Controls.Add(this.cboTheme);
             this.tpGeneral.Controls.Add(this.chkIsRecentFilesSaved);
             this.tpGeneral.Controls.Add(this.chkUseLowPriorityOnHide);
-            this.tpGeneral.Controls.Add(this.txtCheckForUpdatesDays);
-            this.tpGeneral.Controls.Add(this.lblDays);
             this.tpGeneral.Controls.Add(this.btnClearCache);
-            this.tpGeneral.Controls.Add(this.chkCheckForUpdates);
             this.tpGeneral.Controls.Add(this.chkRecursive);
             this.tpGeneral.Controls.Add(this.chkAutoScrollFileList);
             this.tpGeneral.Controls.Add(this.chkFlashWindowWhenDone);
@@ -174,29 +168,12 @@
             this.chkUseLowPriorityOnHide.Name = "chkUseLowPriorityOnHide";
             this.chkUseLowPriorityOnHide.UseVisualStyleBackColor = true;
             // 
-            // txtCheckForUpdatesDays
-            // 
-            resources.ApplyResources(this.txtCheckForUpdatesDays, "txtCheckForUpdatesDays");
-            this.txtCheckForUpdatesDays.Name = "txtCheckForUpdatesDays";
-            // 
-            // lblDays
-            // 
-            resources.ApplyResources(this.lblDays, "lblDays");
-            this.lblDays.Name = "lblDays";
-            // 
             // btnClearCache
             // 
             resources.ApplyResources(this.btnClearCache, "btnClearCache");
             this.btnClearCache.Name = "btnClearCache";
             this.btnClearCache.UseVisualStyleBackColor = true;
             this.btnClearCache.Click += new System.EventHandler(this.btnClearCache_Click);
-            // 
-            // chkCheckForUpdates
-            // 
-            resources.ApplyResources(this.chkCheckForUpdates, "chkCheckForUpdates");
-            this.chkCheckForUpdates.Name = "chkCheckForUpdates";
-            this.chkCheckForUpdates.UseVisualStyleBackColor = true;
-            this.chkCheckForUpdates.CheckedChanged += new System.EventHandler(this.chkCheckForUpdates_CheckedChanged);
             // 
             // chkRecursive
             // 
@@ -808,11 +785,8 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.ImageList imageList1;
 		private System.Windows.Forms.Button btnResetUsageStats;
-		private System.Windows.Forms.CheckBox chkCheckForUpdates;
 		private System.Windows.Forms.CheckBox chkAutomaticallyVerify;
 		private System.Windows.Forms.Button btnClearCache;
-		private System.Windows.Forms.Label lblDays;
-		private System.Windows.Forms.TextBox txtCheckForUpdatesDays;
 		private System.Windows.Forms.CheckBox chkPlaySoundOnError;
 		private System.Windows.Forms.CheckBox chkPlaySoundOnAllOK;
 		private System.Windows.Forms.CheckBox chkPlaySoundOnAllOK_OnlyIfInactive;

@@ -40,8 +40,6 @@ namespace TaoSFV
 			chkAlwaysOnTop.Checked = Program.Settings.General.AlwaysOnTop;
 			chkRememberWindowPlacement.Checked = Program.Settings.General.RememberWindowPlacement;
 			chkReuseWindow.Checked = Program.Settings.General.ReuseWindow;
-			chkCheckForUpdates.Checked = Program.Settings.General.CheckForUpdates;
-			txtCheckForUpdatesDays.Text = Program.Settings.General.UpdateCheckFrequency.ToString();
 			chkFlashWindowWhenDone.Checked = Program.Settings.General.FlashWindowWhenDone;
 			chkAutoScrollFileList.Checked = Program.Settings.General.AutoScrollFileList;
 			chkRecursive.Checked = Program.Settings.General.Recursive;
@@ -100,7 +98,6 @@ namespace TaoSFV
 			UpdateCacheSizeLabels();
 			UpdateChkAutoCloseWhenDoneCheckingOnlyAllOK();
 			UpdateChkPlaySoundOnAllOK_OnlyIfInactive();
-			UpdateCheckForUpdatesTextBoxEnabled();
 			UpdateChkCreateForEachSubDirEnabled();
 			UpdateCommentsTextBoxesEnabled();
 		}
@@ -139,8 +136,6 @@ namespace TaoSFV
             chkAlwaysOnTop.Text = p.AlwaysOnTop;
             chkRememberWindowPlacement.Text = p.RememberWindowPlacement;
             chkReuseWindow.Text = p.ReuseWindowSingleInstance;
-            chkCheckForUpdates.Text = p.CheckForUpdateEvery;
-            lblDays.Text = p.Days;
             chkIsRecentFilesSaved.Text = p.ShowRecentFilesInFileMenu;
             chkFlashWindowWhenDone.Text = p.FlashWindowWhenDone;
             chkAutoScrollFileList.Text = p.AutoScrollFileList;
@@ -217,11 +212,6 @@ namespace TaoSFV
             // OK/Cancel buttons
             btnOK.Text = Language.General.OKButton;
             btnCancel.Text = Language.General.CancelButton;
-
-            Application.DoEvents();
-            txtCheckForUpdatesDays.Left = chkCheckForUpdates.Left + chkCheckForUpdates.Width + 2;
-            Application.DoEvents();
-            lblDays.Left = txtCheckForUpdatesDays.Left + txtCheckForUpdatesDays.Width + 4;
         }
 
 		private void UpdateCommentsTextBoxesEnabled()
@@ -265,7 +255,6 @@ namespace TaoSFV
 			Program.Settings.General.AlwaysOnTop = chkAlwaysOnTop.Checked;
 			Program.Settings.General.RememberWindowPlacement = chkRememberWindowPlacement.Checked;
 			Program.Settings.General.ReuseWindow = chkReuseWindow.Checked;
-			Program.Settings.General.CheckForUpdates = chkCheckForUpdates.Checked;
 			Program.Settings.General.FlashWindowWhenDone = chkFlashWindowWhenDone.Checked;
 			Program.Settings.General.AutoScrollFileList = chkAutoScrollFileList.Checked;
 			Program.Settings.General.Recursive = chkRecursive.Checked;
@@ -275,10 +264,6 @@ namespace TaoSFV
 			AppTheme theme = (AppTheme)Math.Max(cboTheme.SelectedIndex, 0);
 			bool themeChanged = Program.Settings.General.Theme != theme;
 			Program.Settings.General.Theme = theme;
-
-			int days;
-			if (int.TryParse(txtCheckForUpdatesDays.Text, out days) && days > 0)
-				Program.Settings.General.UpdateCheckFrequency = days;
 
 			// Checking
 			Program.Settings.Check.AutoFindRenames = chkAutoFindRenames.Checked;
@@ -376,16 +361,6 @@ namespace TaoSFV
 			Cursor.Current = Cursors.Default;
 
 			MessageBox.Show(Language.PreferencesForm.CacheCleared_Message, Language.PreferencesForm.CacheCleared_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
-		}
-
-		private void chkCheckForUpdates_CheckedChanged(object sender, EventArgs e)
-		{
-			UpdateCheckForUpdatesTextBoxEnabled();
-		}
-
-		private void UpdateCheckForUpdatesTextBoxEnabled()
-		{
-			txtCheckForUpdatesDays.Enabled = chkCheckForUpdates.Checked;
 		}
 
 		private void UpdateChkPlaySoundOnAllOK_OnlyIfInactive()
