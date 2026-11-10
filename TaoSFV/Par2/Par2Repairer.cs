@@ -53,13 +53,11 @@ namespace TaoSFV.Par2
 					foreach (Par2Slices.Source input in slices.Inputs)
 					{
 						Par2FileResult file = byId[input.File.Id];
-						string path = Path.Combine(set.Directory, file.File.Name);
-						if (file.State == Par2FileState.OK)
-							input.Path = path;
-						else if (file.State == Par2FileState.Renamed)
-							input.Path = file.FoundAs;
-						else if (file.State == Par2FileState.Damaged && file.SliceOk[input.SliceIndex])
-							input.Path = path;
+						if (file.Locations != null && file.Locations[input.SliceIndex].Path != null)
+						{
+							input.Path = file.Locations[input.SliceIndex].Path;
+							input.Offset = file.Locations[input.SliceIndex].Offset;
+						}
 					}
 
 					List<int> missing = Enumerable.Range(0, slices.Inputs.Count).Where(i => slices.Inputs[i].Path == null).ToList();
@@ -137,7 +135,7 @@ namespace TaoSFV.Par2
 				presentFactors[p] = factors;
 			});
 
-			// rebuilt files start as copies of their intact slices
+			// rebuilt files start as copies of their intact slices, wherever those were found
 			foreach (Par2FileResult file in toRebuild)
 			{
 				string temp = Path.Combine(set.Directory, file.File.Name) + TempSuffix;
@@ -145,16 +143,17 @@ namespace TaoSFV.Par2
 				using (FileStream output = new FileStream(temp, FileMode.Create, FileAccess.Write))
 				{
 					output.SetLength(file.File.Length);
-					if (file.State == Par2FileState.Damaged)
+					if (file.Locations != null)
 					{
 						byte[] buffer = new byte[set.SliceSize];
 						for (int s = 0; s < file.TotalSlices; s++)
 						{
-							if (!file.SliceOk[s])
+							Par2SliceLocation location = file.Locations[s];
+							if (location.Path == null)
 								continue;
 							long position = s * set.SliceSize;
 							int count = (int)Math.Min(set.SliceSize, file.File.Length - position);
-							slices.ReadFile(Path.Combine(set.Directory, file.File.Name), position, count, buffer);
+							slices.ReadFile(location.Path, location.Offset, count, buffer);
 							output.Position = position;
 							output.Write(buffer, 0, count);
 						}

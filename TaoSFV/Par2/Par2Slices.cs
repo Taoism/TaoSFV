@@ -15,6 +15,7 @@ namespace TaoSFV.Par2
 			public Par2File File;
 			public int SliceIndex;     // within the file
 			public string Path;        // where the bytes are read from (null: not available)
+			public long Offset;        // where in that file the slice starts (not SliceIndex * size when it was found shifted)
 		}
 
 		private readonly Dictionary<string, FileStream> _streams = new Dictionary<string, FileStream>(StringComparer.OrdinalIgnoreCase);
@@ -36,11 +37,11 @@ namespace TaoSFV.Par2
 		public List<Source> Inputs { get; private set; }
 		public ushort[] Constants { get; private set; }
 
-		/// <summary>Reads part of an input slice (count bytes from offset within the slice), zero-padded past the file's end.</summary>
+		/// <summary>Reads part of an input slice (buffer.Length bytes from offset within the slice), zero-padded past the slice's data.</summary>
 		public void ReadInput(Source input, long offset, Span<byte> buffer)
 		{
-			long position = input.SliceIndex * SliceSize + offset;
-			ReadFile(input.Path, position, Math.Max(0, Math.Min(buffer.Length, input.File.Length - position)), buffer);
+			long dataLength = Math.Min(SliceSize, input.File.Length - input.SliceIndex * SliceSize);
+			ReadFile(input.Path, input.Offset + offset, Math.Max(0, Math.Min(buffer.Length, dataLength - offset)), buffer);
 		}
 
 		/// <summary>Reads count bytes at position into buffer (the rest of buffer zeroed).</summary>
@@ -88,7 +89,10 @@ namespace TaoSFV.Par2
 			using (Par2Slices slices = new Par2Slices(set))
 			{
 				foreach (Par2Slices.Source input in slices.Inputs)
+				{
 					input.Path = Path.Combine(set.Directory, input.File.Name);
+					input.Offset = input.SliceIndex * set.SliceSize;
+				}
 
 				byte[][] recovery = new byte[exponents.Count][];
 				for (int r = 0; r < recovery.Length; r++)

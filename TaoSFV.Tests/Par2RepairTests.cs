@@ -197,6 +197,44 @@ namespace TaoSFV.Tests
 			AssertAllRestored();
 		}
 
+		[Theory]
+		[InlineData(37)]    // bytes inserted in slice 2: slices 3..10 are shifted forward
+		[InlineData(-37)]   // bytes removed from slice 2: shifted back
+		public void FindsShiftedSlicesAfterInsertedOrRemovedBytes(int change)
+		{
+			string par2 = MakeSet(1);
+			byte[] data = File.ReadAllBytes(Path_("a.bin"));
+			int at = SliceSize * 2 + 1000;
+			byte[] changed = change > 0
+				? data.Take(at).Concat(Enumerable.Repeat((byte)0xEE, change)).Concat(data.Skip(at)).ToArray()
+				: data.Take(at).Concat(data.Skip(at - change)).ToArray();
+			File.WriteAllBytes(Path_("a.bin"), changed);
+
+			Par2Result verified = Par2Verifier.Verify(Par2Reader.Load(par2));
+			Par2FileResult a = verified.Files.Single(f => f.File.Name == "a.bin");
+
+			Assert.Equal(Par2FileState.Damaged, a.State);
+			Assert.Equal(10, a.GoodSlices);          // all but slice 2
+			Assert.Equal(8, a.ShiftedSlices);        // slices 3..9 and the partial last slice
+			Assert.False(a.SliceOk[2]);
+			Assert.Equal(1, verified.SlicesNeeded);  // one recovery slice is enough
+
+			Par2Repairer.Repair(verified);
+			AssertAllRestored();
+		}
+
+		[Fact]
+		public void ShiftedScanSkipsIntactSlicesAndFindsNothingInRandomData()
+		{
+			string par2 = MakeSet(2);
+			Corrupt("a.bin", SliceSize * 4 + 9);   // one slice damaged in place, nothing shifted
+
+			Par2Result verified = Par2Verifier.Verify(Par2Reader.Load(par2));
+			Par2FileResult a = verified.Files.Single(f => f.File.Name == "a.bin");
+			Assert.Equal(10, a.GoodSlices);
+			Assert.Equal(0, a.ShiftedSlices);
+		}
+
 		[Fact]
 		public void RefusesWithoutEnoughRecoveryData()
 		{

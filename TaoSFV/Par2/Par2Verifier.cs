@@ -31,15 +31,39 @@ namespace TaoSFV.Par2
 
 		public int TotalSlices { get; internal set; }
 
-		/// <summary>Slices that are intact in place (all of them for OK and Renamed).</summary>
-		public int GoodSlices { get; internal set; }
+		/// <summary>Where each slice's intact data was found (Path null: nowhere). Null when the file is missing.</summary>
+		internal Par2SliceLocation[] Locations { get; set; }
 
-		/// <summary>Per slice: intact in place. Null when the file is missing.</summary>
-		public bool[] SliceOk { get; internal set; }
+		/// <summary>Slices whose data is available, in place or found elsewhere (all of them for OK and Renamed).</summary>
+		public int GoodSlices
+		{
+			get { return Locations == null ? 0 : Locations.Count(l => l.Path != null); }
+		}
+
+		/// <summary>Per slice: its data is available. Null when the file is missing.</summary>
+		public bool[] SliceOk
+		{
+			get { return Locations == null ? null : Locations.Select(l => l.Path != null).ToArray(); }
+		}
+
+		/// <summary>Intact slices found away from their place (bytes inserted or removed before them, or in another file).</summary>
+		public int ShiftedSlices { get; internal set; }
 
 		public int MissingSlices
 		{
 			get { return TotalSlices - GoodSlices; }
+		}
+	}
+
+	internal struct Par2SliceLocation
+	{
+		public string Path;
+		public long Offset;
+
+		public Par2SliceLocation(string path, long offset)
+		{
+			Path = path;
+			Offset = offset;
 		}
 	}
 
@@ -107,10 +131,12 @@ namespace TaoSFV.Par2
 					claimed.Add(found);
 					result.State = Par2FileState.Renamed;
 					result.FoundAs = found;
-					result.GoodSlices = result.TotalSlices;
-					result.SliceOk = Enumerable.Repeat(true, result.TotalSlices).ToArray();
+					result.Locations = InPlace(found, result.TotalSlices, set.SliceSize);
 				}
 			}
+
+			// slices of damaged files may still be intact, shifted by bytes added or lost before them
+			Par2SliceScanner.FindShiftedSlices(set, results, cancel, progress);
 
 			return new Par2Result { Set = set, Files = results };
 		}
@@ -135,13 +161,12 @@ namespace TaoSFV.Par2
 			if (length == file.Length && fileHash.AsSpan().SequenceEqual(file.Hash))
 			{
 				result.State = Par2FileState.OK;
-				result.GoodSlices = total;
-				result.SliceOk = Enumerable.Repeat(true, total).ToArray();
+				result.Locations = InPlace(path, total, set.SliceSize);
 				return result;
 			}
 
 			// damaged: a slice is good when its CRC32 and MD5 both match (MD5 only for the CRC matches, in a second pass)
-			bool[] ok = new bool[total];
+			Par2SliceLocation[] locations = new Par2SliceLocation[total];
 			if (file.Slices != null && file.Slices.Length == total)
 			{
 				bool[] candidates = new bool[total];
@@ -152,16 +177,23 @@ namespace TaoSFV.Par2
 				{
 					ReadSlices(path, set.SliceSize, total, cancel, null, (index, slice) =>
 					{
-						if (candidates[index])
-							ok[index] = MD5.HashData(slice).AsSpan().SequenceEqual(file.Slices[index].Md5);
+						if (candidates[index] && MD5.HashData(slice).AsSpan().SequenceEqual(file.Slices[index].Md5))
+							locations[index] = new Par2SliceLocation(path, index * set.SliceSize);
 					});
 				}
 			}
 
 			result.State = Par2FileState.Damaged;
-			result.SliceOk = ok;
-			result.GoodSlices = ok.Count(b => b);
+			result.Locations = locations;
 			return result;
+		}
+
+		private static Par2SliceLocation[] InPlace(string path, int count, long sliceSize)
+		{
+			Par2SliceLocation[] locations = new Par2SliceLocation[count];
+			for (int i = 0; i < count; i++)
+				locations[i] = new Par2SliceLocation(path, i * sliceSize);
+			return locations;
 		}
 
 		/// <summary>
