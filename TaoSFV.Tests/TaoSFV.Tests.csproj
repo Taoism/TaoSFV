@@ -19,4 +19,9 @@
     <ProjectReference Include="..\TaoSFV\TaoSFV.csproj" />
   </ItemGroup>
 
+  <!-- PAR2 sets made by other tools (par2cmdline 1.4.0), to check compatibility -->
+  <ItemGroup>
+    <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
