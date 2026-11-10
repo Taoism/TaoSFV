@@ -48,6 +48,66 @@ namespace TaoSFV.Tests
 		}
 
 		[Fact]
+		public void VectorPathsMatchScalar()
+		{
+			Random random = new Random(8);
+			foreach (int length in new[] { 0, 2, 30, 32, 62, 64, 66, 96, 128, 1000, 4096, 65538 })
+			{
+				byte[] source = new byte[length];
+				byte[] start = new byte[length];
+				random.NextBytes(source);
+				random.NextBytes(start);
+				foreach (ushort factor in new ushort[] { 0, 1, 2, 0x100B, 0xFFFF, (ushort)random.Next(65536), (ushort)random.Next(65536) })
+				{
+					byte[] expected = (byte[])start.Clone();
+					Galois16.MultiplyAddScalar(expected, source, factor);
+
+					byte[] actual = (byte[])start.Clone();
+					Galois16.MultiplyAdd(actual, source, factor);
+					Assert.Equal(expected, actual);
+
+					if (System.Runtime.Intrinsics.X86.Ssse3.IsSupported && factor > 1)
+					{
+						actual = (byte[])start.Clone();
+						int done = Galois16.MultiplyAddSsse3(actual, source, factor);
+						Galois16.MultiplyAddScalar(actual.AsSpan(done), source.AsSpan(done), factor);
+						Assert.Equal(expected, actual);
+					}
+					if (System.Runtime.Intrinsics.X86.Avx2.IsSupported && factor > 1)
+					{
+						actual = (byte[])start.Clone();
+						int done = Galois16.MultiplyAddAvx2(actual, source, factor);
+						Galois16.MultiplyAddScalar(actual.AsSpan(done), source.AsSpan(done), factor);
+						Assert.Equal(expected, actual);
+					}
+				}
+			}
+		}
+
+		[Fact]
+		public void Benchmark()
+		{
+			// set TAOSFV_BENCH=1 to run: prints MB/s for the scalar and vector block maths
+			if (Environment.GetEnvironmentVariable("TAOSFV_BENCH") != "1")
+				return;
+			byte[] source = new byte[64 * 1024 * 1024], destination = new byte[source.Length];
+			new Random(1).NextBytes(source);
+			foreach (string name in new[] { "scalar", "auto" })
+			{
+				System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
+				for (int i = 0; i < 4; i++)
+				{
+					if (name == "scalar")
+						Galois16.MultiplyAddScalar(destination, source, (ushort)(0x1234 + i));
+					else
+						Galois16.MultiplyAdd(destination, source, (ushort)(0x1234 + i));
+				}
+				File.AppendAllText(Path.Combine(Path.GetTempPath(), "taosfv-bench.txt"),
+					string.Format("{0}: {1:0} MB/s{2}", name, 4 * 64 / sw.Elapsed.TotalSeconds, Environment.NewLine));
+			}
+		}
+
+		[Fact]
 		public void InvertGivesTheIdentity()
 		{
 			Random random = new Random(7);
