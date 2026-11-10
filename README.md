@@ -49,6 +49,14 @@ dotnet publish TaoSFV.Cli\TaoSFV.Cli.csproj -c Release -r win-x64 --self-contain
 dotnet test TaoSFV.Tests
 ```
 
+Release files (self-contained, so the .NET runtime is included; needs [Inno Setup 6](https://jrsoftware.org/isinfo.php) for the installer):
+
+```
+.uild-release.ps1 -Version 2.0.0   # release\TaoSFV-2.0.0-win-x64.zip and TaoSFV-2.0.0-setup-win-x64.exe
+```
+
+The installer installs for the current user without an administrator prompt (or for all users), can add `taosfv-cli` to PATH, and removes TaoSFV's file types and Explorer menu when uninstalled.
+
 `TaoSFVLanguage` regenerates `TaoSFV/Localization/*.Generated.cs` after adding strings to `TaoSFV/languages/english.txt`; other language files fall back to English for missing keys.
 
 ### Changes from ilSFV 1.11 (.NET Framework 3.5)

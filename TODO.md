@@ -80,4 +80,7 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       https://github.com/Taoism/TaoSFV.
 - [ ] **Packaging.** Self-contained single-file build (no .NET install needed), code signing (avoids SmartScreen
       warnings), a modernized installer, and a winget listing.
+      (Done: self-contained zip and installer via `build-release.ps1`; per-user install, PATH option, /unregister on
+      uninstall. Single-file isn't used: SQL CE loads its engine from amd64\ next to its DLL. Left: code signing
+      (needs a certificate) and the winget listing (needs the published release).)
 - [ ] **ARM64.** Builds are x64 only; the ilSFV import's SQL Server Compact engine only exists for x64/x86.

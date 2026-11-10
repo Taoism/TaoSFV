@@ -240,7 +240,7 @@ namespace TaoSFV
 
 		private void btnWeb_Click(object sender, EventArgs e)
 		{
-			Program.OpenUrl("https://github.com/judwhite/ilSFV");
+			Program.OpenUrl(CommentTemplate.Url);
 		}
 
 		private void btnOK_Click(object sender, EventArgs e)

@@ -33,6 +33,20 @@ namespace TaoSFV
             // checksum files are read/written with legacy code pages, which .NET only provides via this provider
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
+            // the uninstaller runs "TaoSFV.exe /unregister": removes the file types and Explorer menu, nothing else
+            if (args != null && args.Length == 1 && args[0].ToLower() == "/unregister")
+            {
+                try
+                {
+                    FileTypeRegistration.Unregister();
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine(ex);
+                }
+                return;
+            }
+
             // a scheduled check runs without a window and must not take the single-instance mutex: TaoSFV opened
             // meanwhile would otherwise hand its files to it
             bool scheduled = args != null && args.Length == 2 && args[0].ToLower() == ScheduledCheckRun.Argument;

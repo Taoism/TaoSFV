@@ -77,7 +77,7 @@ namespace TaoSFV
 			string body = string.Format("**Version:** {0}\n**OS:** {1}\n\n```\n{2}\n```\n",
 				Assembly.GetExecutingAssembly().GetName().Version, Environment.OSVersion, stackTrace);
 
-			Program.OpenUrl(string.Format("https://github.com/judwhite/ilSFV/issues/new?title={0}&body={1}",
+			Program.OpenUrl(string.Format(CommentTemplate.Url + "/issues/new?title={0}&body={1}",
 				Uri.EscapeDataString(txtErrorMessage.Text), Uri.EscapeDataString(body)));
 		}
 
