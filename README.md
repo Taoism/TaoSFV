@@ -2,7 +2,7 @@
 
 # TaoSFV
 
-[![MIT License](http://img.shields.io/:license-mit-blue.svg)](https://github.com/judwhite/ilSFV/blob/master/LICENSE) 
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Build](https://github.com/Taoism/TaoSFV/actions/workflows/build.yml/badge.svg)](https://github.com/Taoism/TaoSFV/actions/workflows/build.yml) 
 
 SFV, MD5, SHA-1, SHA-256, SHA-512, XXH128 and BLAKE3 file verification utility for Windows, with a command-line version.
 
@@ -20,6 +20,10 @@ TaoSFV is made in tribute to ilSFV and hkSFV. It continues [ilSFV](https://githu
 - Checks several files at once on SSDs (one at a time on hard drives and network shares)
 - Verify a whole folder tree: File → Verify Folder, drag a folder in, or right-click a folder → TaoSFV → Verify checksum files
 - `taosfv-cli` for scripts and scheduled checks
+
+## Download
+
+From [Releases](https://github.com/Taoism/TaoSFV/releases): `TaoSFV-<version>-setup-win-x64.exe` (installer) or `TaoSFV-<version>-win-x64.zip` (unzip and run `TaoSFV.exe`). Both include the .NET runtime; Windows 10 1809 or later, x64. The builds aren't code-signed yet, so SmartScreen may warn on first run.
 
 ## Command line
 
@@ -88,4 +92,4 @@ Maintained. Issues and Pull Requests will be responded to.
 
 ## License
 
-TaoSFV, like ilSFV, is under the MIT license. See the [LICENSE](https://github.com/judwhite/ilSFV/blob/master/LICENSE) file for details.
+TaoSFV, like ilSFV, is under the MIT license. See the [LICENSE](LICENSE) file for details, and [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt) for the libraries it includes.
