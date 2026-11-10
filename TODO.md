@@ -71,13 +71,14 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       (rely on .NET Framework internals), the old update-check code.
 - [x] **Cache lookups.** `GetCache` matches `FileName like @Directory || '%'`; SQLite's case-insensitive LIKE can't
       use the index, so each set scans the whole table (35,000 rows with imported ilSFV settings).
-- [ ] **CI.** GitHub Actions: build, run the 103 tests, publish artifacts.
+- [x] **CI.** GitHub Actions: build, run the 103 tests, publish artifacts.
 
 ## Release
 
-- [ ] **TaoSFV GitHub repo.** Create it, push the `taosfv` branch, and repoint the Web button, bug reports and
+- [x] **TaoSFV GitHub repo.** Create it, push the `taosfv` branch, and repoint the Web button, bug reports and
       update link (they still go to judwhite/ilSFV). The default comments header already links to
       https://github.com/Taoism/TaoSFV.
+      (Done 2026-11-09: public at https://github.com/Taoism/TaoSFV, v2.0.0 pre-release with the installer and zip.)
 - [ ] **Packaging.** Self-contained single-file build (no .NET install needed), code signing (avoids SmartScreen
       warnings), a modernized installer, and a winget listing.
       (Done: self-contained zip and installer via `build-release.ps1`; per-user install, PATH option, /unregister on
