@@ -93,3 +93,24 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       .desktop action for checksum files). The Windows-only parts (registry file types, Task Scheduler, the ilSFV import)
       need Linux counterparts or are dropped (scheduled checks via systemd timers).
 - [ ] **ARM64.** Builds are x64 only; the ilSFV import's SQL Server Compact engine only exists for x64/x86.
+
+## Security (review 2026-11-09)
+
+- [x] **File names in checksum and PAR2 files aren't confined to the set's folder (high).** Names from `.sfv`/`.md5`/
+  `.sha*`/`.par2` go straight into `Path.Combine(set.Directory, name)` (`ChecksumSetLoader`, `FileVerifier`,
+  `Par2Repairer`, `Par2Verifier`, `Par2SliceScanner`, `RemoveDuplicatesForm`, `RenamedFileFinder`). A name such as
+  `..\..\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\x.cmd`, or an absolute `C:\...` path (which
+  makes `Path.Combine` drop the folder), points outside the set. These sets often come from downloads, so:
+  - PAR2 **Repair** writes a file with the PAR2 set's own content to that path, which lets a crafted .par2 write any file anywhere.
+  - Verify with *Create .missing markers* creates empty files there, and *Rename bad files* / *Clean up bad/missing*
+    rename files there.
+  - Remove Duplicates can delete a file outside the folder.
+  Fix it in one place: reject names that are rooted or contain a drive, a UNC path, an ADS (`:`) or `..`. For names with
+  subfolders, resolve `Path.GetFullPath` and require it to stay under the set folder. Report rejected entries like
+  malformed lines. Add tests with traversal names.
+- [x] **PAR2 file lengths aren't checked (low).** `Par2Repairer` calls `output.SetLength(file.File.Length)` with a length
+  read from the PAR2 file, so a crafted set can fill the disk with a sparse or huge temp file. Refuse lengths far beyond
+  `slice count × slice size` and check free space first.
+  (Done in 2.1.1: `Model/Workset/SafePath.cs`. Entries named outside the folder are still checked, but never get
+  .missing markers, renames or deletes (verify, Find Renamed Files, Remove Duplicates). A PAR2 set with such a name,
+  a bad block size or an impossible file size is refused, and repair checks free space first. Tests: `SafePathTests`.)

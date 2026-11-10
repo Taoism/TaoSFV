@@ -13,6 +13,15 @@ namespace TaoSFV.Model.Workset
 		public ChecksumFileState State { get; set; }
 		public bool IsDeleted { get; set; }
 
+		/// <summary>
+		/// False when the checksum file names this file outside its own folder (an absolute path or one with ".."). Such
+		/// a file is still checked, but TaoSFV never creates, renames or deletes anything for it.
+		/// </summary>
+		public bool IsInsideSet
+		{
+			get { return Set != null && SafePath.IsInside(Set.Directory, FileName); }
+		}
+
 		public string OriginalChecksum
 		{
 			get { return _originalChecksum; }

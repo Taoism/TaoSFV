@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using TaoSFV.Model.Workset;
 
 namespace TaoSFV.Par2
 {
@@ -93,7 +94,27 @@ namespace TaoSFV.Par2
 				throw new InvalidDataException("No PAR2 main packet found in " + string.Join(", ", read.Select(Path.GetFileName)));
 			set.Directory = directory;
 			set.Par2Files.AddRange(read);
+			CheckSafe(set);
 			return set;
+		}
+
+		/// <summary>
+		/// PAR2 sets often come with downloads, and repair writes files by the names inside them: refuse a set that names a
+		/// file outside its own folder (absolute, a drive, "..", a stream) or gives sizes no real set has.
+		/// </summary>
+		private static void CheckSafe(Par2Set set)
+		{
+			if (set.SliceSize <= 0 || set.SliceSize % 4 != 0 || set.SliceSize > int.MaxValue)
+				throw new InvalidDataException("The PAR2 set has an invalid block size (" + set.SliceSize + ").");
+			foreach (Par2File file in set.Files.Values)
+			{
+				if (!file.HasDescription)
+					continue;
+				if (SafePath.Resolve(set.Directory, file.Name) == null)
+					throw new InvalidDataException("The PAR2 set names a file outside its folder (" + file.Name + "); it was not used.");
+				if (file.Length < 0 || (file.Length + set.SliceSize - 1) / set.SliceSize > int.MaxValue)
+					throw new InvalidDataException("The PAR2 set gives " + file.Name + " an invalid size (" + file.Length + ").");
+			}
 		}
 
 		// ------------------------------------------------------------------ packet scanning

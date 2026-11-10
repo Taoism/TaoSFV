@@ -32,8 +32,8 @@ namespace TaoSFV.Verification
 
 			foreach (ChecksumFile file in set.Files)
 			{
-				if (file.State != ChecksumFileState.Missing)
-					continue;
+				if (file.State != ChecksumFileState.Missing || !file.IsInsideSet)
+					continue; // never moves a file to a name outside the set's folder
 
 				string fullFileName = Path.Combine(set.Directory, file.FileName);
 				string directory = Path.GetDirectoryName(fullFileName);

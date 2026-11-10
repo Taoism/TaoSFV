@@ -58,5 +58,8 @@ namespace TaoSFV.Localization
 
         ///<summary>The Recycle Bin wouldn't take it (it can't hold paths of 260 characters or more).</summary>
         public string NotRecycled { get; set; }
+
+        ///<summary>The checksum file names it outside its own folder, so it isn't deleted from here.</summary>
+        public string OutsideFolder { get; set; }
     }
 }

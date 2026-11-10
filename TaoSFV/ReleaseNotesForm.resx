@@ -124,7 +124,15 @@
     <value>True</value>
   </metadata>
   <data name="txtReleaseNotes.Text" xml:space="preserve">
-    <value>TaoSFV 2.1 released 2026-11-09
+    <value>TaoSFV 2.1.1 released 2026-11-09
+
+SECURITY:
+- File names in checksum and PAR2 files can no longer reach outside their folder. An entry such as ..\x or C:\x is still checked, but TaoSFV never creates, renames or deletes a file for it. A PAR2 set that names such a file is refused, so Repair can't write outside the set's folder.
+- PAR2 Repair checks free disk space first, and refuses sets with impossible block or file sizes
+
+=====
+
+TaoSFV 2.1 released 2026-11-09
 
 NEW:
 - PAR2: open a .par2 to check its files and repair damaged, missing or renamed ones from the recovery data

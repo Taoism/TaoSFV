@@ -107,6 +107,23 @@ namespace TaoSFV.Par2
 			return result;
 		}
 
+		/// <summary>Stops before writing when the rebuilt files can't fit (a damaged or crafted set can claim any size).</summary>
+		private static void CheckFreeSpace(string directory, long needed)
+		{
+			long free;
+			try
+			{
+				free = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(directory))).AvailableFreeSpace;
+			}
+			catch (Exception ex) when (ex is ArgumentException || ex is IOException || ex is UnauthorizedAccessException)
+			{
+				return; // e.g. a network share DriveInfo can't read: let the write itself fail
+			}
+			if (needed > free)
+				throw new IOException(string.Format("Repair needs {0:#,0} MB free in {1}; only {2:#,0} MB is free. Nothing was changed.",
+					needed >> 20, directory, free >> 20));
+		}
+
 		private static void Rebuild(Par2Set set, Par2Slices slices, List<int> missing, List<Par2FileResult> toRebuild,
 			Dictionary<Par2File, string> temps, CancellationToken cancel, Action<long> progress, long memoryLimit)
 		{
@@ -134,6 +151,8 @@ namespace TaoSFV.Par2
 				}
 				presentFactors[p] = factors;
 			});
+
+			CheckFreeSpace(set.Directory, toRebuild.Sum(f => f.File.Length));
 
 			// rebuilt files start as copies of their intact slices, wherever those were found
 			foreach (Par2FileResult file in toRebuild)

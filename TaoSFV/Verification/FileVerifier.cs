@@ -150,6 +150,10 @@ namespace TaoSFV.Verification
 		{
 			bool checkCacheThisFile = options.UseCache;
 
+			// a name outside the set's folder (absolute or with ".."): check it, but never create, rename or delete anything
+			if (!file.IsInsideSet)
+				options = VerifyOptions.ReadOnly(options.UseCache);
+
 			// check for .bad if missing
 			if (file.FileInfo == null)
 			{

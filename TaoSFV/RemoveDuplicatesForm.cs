@@ -260,6 +260,12 @@ namespace TaoSFV
             foreach (ChecksumFile removeFile in files.ToList())
             {
                 string fullPath = Path.Combine(_set.Directory, removeFile.FileName);
+                if (!removeFile.IsInsideSet)
+                {
+                    // the checksum file names it outside its own folder: never delete it from here
+                    failed.Add(fullPath + Environment.NewLine + "    " + Language.RemoveDuplicatesForm.OutsideFolder);
+                    continue;
+                }
                 try
                 {
                     if (File.Exists(fullPath) && !Program.SafeDelete(fullPath))

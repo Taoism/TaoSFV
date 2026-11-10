@@ -318,6 +318,7 @@ RewriteChecksum_Message                           = Would you like to rewrite th
 RewriteChecksum_Title                             = Rewrite Checksum File
 DeleteFailed_Message                              = {0:#,0} file(s) couldn't be deleted and stay in the checksum file:\n\n{1}
 NotRecycled                                       = The Recycle Bin wouldn't take it (it can't hold paths of 260 characters or more).
+OutsideFolder                                     = The checksum file names it outside its own folder, so it isn't deleted from here.
 
 ### Exception Form
 

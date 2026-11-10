@@ -138,7 +138,7 @@ Exit codes:
 			{
 				set = Par2Reader.Load(par2);
 			}
-			catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+			catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is InvalidDataException)
 			{
 				Console.Error.WriteLine("taosfv-cli: can't read " + par2 + ": " + ex.Message);
 				return ExitError;
