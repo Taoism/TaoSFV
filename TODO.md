@@ -41,6 +41,9 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       (ilSFV's behaviour). Consider writing `<folder>\<folder>.sfv` instead, or asking.
       (Done: a single folder gets `<folder>\<folder>.sfv`; files or several items still use the folder they're in.)
 - [ ] **PAR2 repair (large).** Rebuild damaged files from recovery data, QuickPar-style, not just detect them.
+      (In progress: reading, verifying and repairing work in TaoSFV/Par2 and taosfv-cli (verify/repair set.par2);
+      recovery data matches par2cmdline 1.4.0 byte for byte (Fixtures\par2cmdline). Left: the GUI (open .par2, Repair
+      button), SIMD for the block maths, and finding blocks shifted inside a file.)
 
 ## Polish
 

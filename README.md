@@ -33,6 +33,8 @@ From [Releases](https://github.com/Taoism/TaoSFV/releases): `TaoSFV-<version>-se
 taosfv-cli verify D:\Music\album.sfv
 taosfv-cli verify D:\Music --quiet        # every checksum file under D:\Music
 taosfv-cli create sha256 D:\Music\album\album.sha256 D:\Music\album
+taosfv-cli verify D:\Downloads\set.par2   # PAR2: damaged, missing or renamed files, and whether repair is possible
+taosfv-cli repair D:\Downloads\set.par2   # rebuild them from the recovery data
 ```
 
 - Exit code 0 when every file is OK, 1 when any is bad, missing or unreadable, 2 for bad arguments or an unreadable checksum file, 130 on Ctrl+C.
@@ -40,6 +42,7 @@ taosfv-cli create sha256 D:\Music\album\album.sha256 D:\Music\album
 - `--threads N` overrides how many files are read at once.
 - Verifying never renames, deletes or creates files.
 - `--use-cache` reuses TaoSFV's result cache (`%LOCALAPPDATA%\TaoSFV\cache.db`): a file whose size and modified time haven't changed since it was last checked counts as OK without being read, and new results are added. Faster, but it won't notice damage that left both unchanged. Without the option, every file is read.
+- `verify` and `repair` read PAR2 recovery sets (all `.par2` files with the same base name). Repair rebuilds damaged and missing files with TaoSFV's own PAR2 code (no par2cmdline needed), checks each against its MD5 before replacing anything, keeps a damaged original as `name.bad` and moves renamed files back. Its recovery data matches par2cmdline's byte for byte. The GUI doesn't open `.par2` files yet.
 - `create` writes md5sum-style files with `/` separators and LF line endings, so `md5sum -c` and `sha256sum -c` read them.
 
 ## Building
