@@ -18,6 +18,9 @@ namespace TaoSFV
 		private const string FolderMenuKey = "TaoSFV.FolderMenu";
 		private const string MenuVerb = "TaoSFV";
 
+		// an extra verb on .par2 files that leaves their default program (MultiPar, QuickPar, ...) alone
+		internal const string Par2VerbKey = @"SystemFileAssociations\.par2\shell\TaoSFV.Par2";
+
 		private const int SHCNE_ASSOCCHANGED = 0x08000000;
 		private const int SHCNF_IDLIST = 0x0;
 
@@ -100,6 +103,14 @@ namespace TaoSFV
 					command.SetValue("", string.Format("\"{0}\" \"%1\"", exePath));
 			}
 
+			using (RegistryKey verb = classes.CreateSubKey(Par2VerbKey))
+			{
+				verb.SetValue("MUIVerb", "Check with TaoSFV");
+				verb.SetValue("Icon", string.Format("\"{0}\",0", exePath));
+				using (RegistryKey command = verb.CreateSubKey("command"))
+					command.SetValue("", open);
+			}
+
 			AddMenu(classes, "*", CreateMenuKey, exePath);
 			AddMenu(classes, "Directory", FolderMenuKey, exePath);
 		}
@@ -145,6 +156,7 @@ namespace TaoSFV
 				DeleteIfEmpty(classes, "." + extension);
 			}
 
+			classes.DeleteSubKeyTree(Par2VerbKey, false);
 			classes.DeleteSubKeyTree(CreateMenuKey, false);
 			classes.DeleteSubKeyTree(FolderMenuKey, false);
 			foreach (string target in new[] { "*", "Directory" })

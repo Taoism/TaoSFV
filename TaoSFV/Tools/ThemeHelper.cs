@@ -20,6 +20,11 @@ namespace TaoSFV
 			public bool UseVisualStyleBackColor;
 			public BorderStyle BorderStyle;
 			public FlatStyle FlatStyle;
+			public Color BackColor;
+			public Color ForeColor;
+			public Color BorderColor;
+			public Color MouseOverBackColor;
+			public Color MouseDownBackColor;
 		}
 
 		private static readonly ConditionalWeakTable<Control, Original> _touched = new ConditionalWeakTable<Control, Original>();
@@ -111,6 +116,14 @@ namespace TaoSFV
 				RefreshButtons(child);
 		}
 
+		// dark grey buttons (about the shades of Windows 11's dark buttons)
+		private static readonly Color ButtonFace = Color.FromArgb(0x33, 0x33, 0x33);
+		private static readonly Color ButtonHover = Color.FromArgb(0x3D, 0x3D, 0x3D);
+		private static readonly Color ButtonPressed = Color.FromArgb(0x2A, 0x2A, 0x2A);
+		private static readonly Color ButtonBorder = Color.FromArgb(0x4A, 0x4A, 0x4A);
+		private static readonly Color DefaultButtonBorder = Color.FromArgb(0x6E, 0x6E, 0x6E);
+		private static readonly Color ButtonText = Color.FromArgb(0xE4, 0xE4, 0xE4);
+
 		private static void ApplyRecursive(Control control, bool dark)
 		{
 			Original original;
@@ -151,6 +164,30 @@ namespace TaoSFV
 					changed = true;
 				}
 
+				// push buttons: WinForms' dark buttons have white or light gray outlines; flat ones in dark grey blend in
+				Button button = control as Button;
+				if (button != null)
+				{
+					original.FlatStyle = button.FlatStyle;
+					original.UseVisualStyleBackColor = button.UseVisualStyleBackColor;
+					original.BackColor = button.BackColor;
+					original.ForeColor = button.ForeColor;
+					original.BorderColor = button.FlatAppearance.BorderColor;
+					original.MouseOverBackColor = button.FlatAppearance.MouseOverBackColor;
+					original.MouseDownBackColor = button.FlatAppearance.MouseDownBackColor;
+
+					Form form = button.FindForm();
+					bool isDefault = form != null && form.AcceptButton == button;
+					button.FlatStyle = FlatStyle.Flat;
+					button.UseVisualStyleBackColor = false;
+					button.BackColor = ButtonFace;
+					button.ForeColor = ButtonText;
+					button.FlatAppearance.BorderColor = isDefault ? DefaultButtonBorder : ButtonBorder;
+					button.FlatAppearance.MouseOverBackColor = ButtonHover;
+					button.FlatAppearance.MouseDownBackColor = ButtonPressed;
+					changed = true;
+				}
+
 				if (changed)
 					_touched.Add(control, original);
 			}
@@ -173,6 +210,18 @@ namespace TaoSFV
 					comboBox.FlatStyle = original.FlatStyle;
 					comboBox.ResetBackColor();
 					comboBox.ResetForeColor();
+				}
+
+				Button button = control as Button;
+				if (button != null)
+				{
+					button.FlatStyle = original.FlatStyle;
+					button.BackColor = original.BackColor;
+					button.ForeColor = original.ForeColor;
+					button.UseVisualStyleBackColor = original.UseVisualStyleBackColor;
+					button.FlatAppearance.BorderColor = original.BorderColor;
+					button.FlatAppearance.MouseOverBackColor = original.MouseOverBackColor;
+					button.FlatAppearance.MouseDownBackColor = original.MouseDownBackColor;
 				}
 
 				_touched.Remove(control);

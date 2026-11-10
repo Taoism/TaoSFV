@@ -360,7 +360,7 @@ namespace TaoSFV
 			Cache.Clear();
 			Cursor.Current = Cursors.Default;
 
-			MessageBox.Show(Language.PreferencesForm.CacheCleared_Message, Language.PreferencesForm.CacheCleared_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+			ThemedMessageBox.Show(Language.PreferencesForm.CacheCleared_Message, Language.PreferencesForm.CacheCleared_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
 		}
 
 		private void UpdateChkPlaySoundOnAllOK_OnlyIfInactive()
@@ -389,7 +389,7 @@ namespace TaoSFV
 			sb.AppendLine("{1} : File last write time");
 			sb.AppendLine("{2} : File name (relative path)");*/
 
-			MessageBox.Show(Language.PreferencesForm.ShowVariables_Message, Language.PreferencesForm.ShowVariables_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+			ThemedMessageBox.Show(Language.PreferencesForm.ShowVariables_Message, Language.PreferencesForm.ShowVariables_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
 		}
 
 		private void chkWriteComments_CheckedChanged(object sender, EventArgs e)

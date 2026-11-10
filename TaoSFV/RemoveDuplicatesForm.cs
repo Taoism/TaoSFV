@@ -189,7 +189,7 @@ namespace TaoSFV
             string sourceFullPath = Path.Combine(_set.Directory, file.FileName);
             if (!File.Exists(sourceFullPath))
             {
-                MessageBox.Show(
+                ThemedMessageBox.Show(
                     string.Format(lang.SourceFileDoesNotExist_Message, sourceFullPath),
                     lang.SourceFileDoesNotExist_Title,
                     MessageBoxButtons.OK,
@@ -199,7 +199,7 @@ namespace TaoSFV
             }
 
             string confirmMessage = string.Format(lang.ConfirmSourceFile_Message, file.FileName);
-            DialogResult res = MessageBox.Show(confirmMessage, lang.ConfirmSourceFile_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            DialogResult res = ThemedMessageBox.Show(confirmMessage, lang.ConfirmSourceFile_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (res != DialogResult.Yes)
                 return;
 
@@ -228,7 +228,7 @@ namespace TaoSFV
                         sb.AppendLine(deleteFile.FileName);
                 }
 
-                DialogResult res2 = MessageBox.Show(sb.ToString(), lang.ConfirmDelete_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                DialogResult res2 = ThemedMessageBox.Show(sb.ToString(), lang.ConfirmDelete_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (res2 == DialogResult.Yes)
                 {
                     Cursor.Current = Cursors.WaitCursor;
@@ -242,7 +242,7 @@ namespace TaoSFV
                 string list = string.Join(Environment.NewLine, failed.Take(10));
                 if (failed.Count > 10)
                     list += Environment.NewLine + "...";
-                MessageBox.Show(string.Format(lang.DeleteFailed_Message, failed.Count, list), lang.ConfirmDelete_Title,
+                ThemedMessageBox.Show(string.Format(lang.DeleteFailed_Message, failed.Count, list), lang.ConfirmDelete_Title,
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
@@ -294,7 +294,7 @@ namespace TaoSFV
                 if (deleteCount > 0)
                 {
                     string msg = string.Format(lang.RewriteChecksum_Message, deleteCount);
-                    DialogResult res = MessageBox.Show(msg, lang.RewriteChecksum_Title, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    DialogResult res = ThemedMessageBox.Show(msg, lang.RewriteChecksum_Title, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
 
                     if (res == DialogResult.Cancel)
                     {

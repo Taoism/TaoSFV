@@ -238,7 +238,7 @@ namespace TaoSFV
 			string folder = _folder.Text.Trim();
 			if (folder.Length == 0 || !Directory.Exists(folder))
 			{
-				MessageBox.Show(this, string.Format(p.ScheduleChecks_FolderNotFound, folder), Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+				ThemedMessageBox.Show(this, string.Format(p.ScheduleChecks_FolderNotFound, folder), Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
 				return;
 			}
 			folder = Path.GetFullPath(folder);
@@ -258,7 +258,7 @@ namespace TaoSFV
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show(this, string.Format(p.ScheduleChecks_Error, ex.Message), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				ThemedMessageBox.Show(this, string.Format(p.ScheduleChecks_Error, ex.Message), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 				return;
 			}
 			Reload(folder);
@@ -276,7 +276,7 @@ namespace TaoSFV
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show(this, string.Format(Language.MainForm.ScheduleChecks_Error, ex.Message), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				ThemedMessageBox.Show(this, string.Format(Language.MainForm.ScheduleChecks_Error, ex.Message), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 			}
 			Reload(null);
 		}

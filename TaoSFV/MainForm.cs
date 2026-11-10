@@ -300,7 +300,7 @@ export results to text file
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, Language.General.Error, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ThemedMessageBox.Show(ex.Message, Language.General.Error, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -690,7 +690,9 @@ export results to text file
             Cursor.Current = Cursors.WaitCursor;
             using (OpenFileDialog ofd = new OpenFileDialog())
             {
-                ofd.Filter = ChecksumAlgorithm.DialogPattern + "|" + ChecksumAlgorithm.DialogPattern;
+                // checksum files and PAR2 sets (which open in their own window)
+                string pattern = ChecksumAlgorithm.DialogPattern + ";*.par2";
+                ofd.Filter = pattern + "|" + pattern;
                 ofd.Multiselect = multiSelect;
                 Cursor.Current = Cursors.Default;
                 DialogResult res = ofd.ShowDialog();
@@ -745,7 +747,7 @@ export results to text file
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
-                MessageBox.Show(this, ex.Message, Language.General.Error, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ThemedMessageBox.Show(this, ex.Message, Language.General.Error, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -856,13 +858,13 @@ export results to text file
                 SkippedChecksumFile file = skipped[0];
                 InvalidChecksumFileException invalid = file.Error as InvalidChecksumFileException;
                 if (invalid != null)
-                    MessageBox.Show(this, string.Format(Language.MainForm.FileContentsNotRecognized, file.Path, invalid.ChecksumType, invalid.Message),
+                    ThemedMessageBox.Show(this, string.Format(Language.MainForm.FileContentsNotRecognized, file.Path, invalid.ChecksumType, invalid.Message),
                         Language.MainForm.UnreadableChecksumFile_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 else if (file.Error is FileNotFoundException)
-                    MessageBox.Show(this, string.Format(Language.MainForm.FileNotFound_Message, file.Path),
+                    ThemedMessageBox.Show(this, string.Format(Language.MainForm.FileNotFound_Message, file.Path),
                         Language.MainForm.FileNotFound_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 else
-                    MessageBox.Show(this, string.Format(Language.MainForm.UnreadableChecksumFile_Message, file.Path, file.Error.Message),
+                    ThemedMessageBox.Show(this, string.Format(Language.MainForm.UnreadableChecksumFile_Message, file.Path, file.Error.Message),
                         Language.MainForm.UnreadableChecksumFile_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -871,7 +873,7 @@ export results to text file
                 (p.Error is FileNotFoundException ? Language.MainForm.FileNotFound_Title : FirstLine(p.Error.Message))));
             if (skipped.Count > 10)
                 list += Environment.NewLine + "...";
-            MessageBox.Show(this, string.Format(Language.MainForm.SkippedChecksumFiles_Message, skipped.Count, list),
+            ThemedMessageBox.Show(this, string.Format(Language.MainForm.SkippedChecksumFiles_Message, skipped.Count, list),
                 Language.MainForm.SkippedChecksumFiles_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
@@ -1152,7 +1154,7 @@ export results to text file
             string list = string.Join(Environment.NewLine, files.Take(10));
             if (files.Length > 10)
                 list += Environment.NewLine + "...";
-            MessageBox.Show(this, string.Format(Language.MainForm.NotRecycled_Message, files.Length, list),
+            ThemedMessageBox.Show(this, string.Format(Language.MainForm.NotRecycled_Message, files.Length, list),
                 Language.MainForm.NotRecycled_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
@@ -1632,7 +1634,7 @@ export results to text file
 
                 SetStatusText(Language.MainForm.Status_Ready);
 
-                MessageBox.Show(string.Format(Language.MainForm.FindRenamedFiles_Message, totalNewOK), Language.MainForm.FindRenamedFiles_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ThemedMessageBox.Show(string.Format(Language.MainForm.FindRenamedFiles_Message, totalNewOK), Language.MainForm.FindRenamedFiles_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             finally
             {
@@ -1727,7 +1729,7 @@ export results to text file
                 if (checkExists && File.Exists(fileName))
                 {
                     string message = string.Format(Language.MainForm.OverwriteFile_Message, fileName);
-                    if (MessageBox.Show(message, Language.MainForm.OverwriteFile_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    if (ThemedMessageBox.Show(message, Language.MainForm.OverwriteFile_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                         return false;
                 }
             }
@@ -1743,7 +1745,7 @@ export results to text file
             if (!checkExists && overwriteCount != 0)
             {
                 string message = string.Format(Language.MainForm.OverwriteMultipleFiles_Message, overwriteCount);
-                if (MessageBox.Show(message, Language.MainForm.OverwriteMultipleFiles_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                if (ThemedMessageBox.Show(message, Language.MainForm.OverwriteMultipleFiles_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 {
                     SetStatusText(Language.MainForm.Status_Ready);
                     _sets.Clear();
@@ -2141,6 +2143,16 @@ export results to text file
             _dropTimer.Enabled = false;
 
             List<string> files = (List<string>)_dropTimer.Tag;
+
+            // PAR2 sets open in their own window (one per set, even when several of its volumes are given)
+            List<string> par2Files = files.Where(f => Par2.Par2Reader.IsPar2File(f) && File.Exists(f)).ToList();
+            if (par2Files.Count != 0)
+            {
+                files = files.Except(par2Files).ToList();
+                foreach (string par2 in par2Files)
+                    Par2Form.Show(this, par2);
+            }
+
             if (files.Count == 0)
                 return;
 
@@ -2260,12 +2272,12 @@ export results to text file
             {
                 Cursor.Current = Cursors.Default;
 
-                MessageBox.Show(string.Format(Language.MainForm.RegisterFileTypesError_Message, ex.Message), Language.MainForm.RegisterFileTypesError_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ThemedMessageBox.Show(string.Format(Language.MainForm.RegisterFileTypesError_Message, ex.Message), Language.MainForm.RegisterFileTypesError_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             Cursor.Current = Cursors.Default;
-            MessageBox.Show(Language.MainForm.RegisterFileTypes_Message, Language.MainForm.RegisterFileTypesError_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ThemedMessageBox.Show(Language.MainForm.RegisterFileTypes_Message, Language.MainForm.RegisterFileTypesError_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void miImportIlsfv_Click(object sender, EventArgs e)
@@ -2285,11 +2297,11 @@ export results to text file
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format(Language.MainForm.RegisterFileTypesError_Message, ex.Message), Language.MainForm.Menu_Tools_UnregisterFileTypes, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ThemedMessageBox.Show(string.Format(Language.MainForm.RegisterFileTypesError_Message, ex.Message), Language.MainForm.Menu_Tools_UnregisterFileTypes, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            MessageBox.Show(Language.MainForm.UnregisterFileTypes_Message, Language.MainForm.Menu_Tools_UnregisterFileTypes, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ThemedMessageBox.Show(Language.MainForm.UnregisterFileTypes_Message, Language.MainForm.Menu_Tools_UnregisterFileTypes, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void miCopyFileNames_Click(object sender, EventArgs e)
@@ -2525,7 +2537,7 @@ export results to text file
 
             if (maxLength < FileNameTruncator.MinimumLength)
             {
-                MessageBox.Show(Language.MainForm.TruncateFileNames_MinimumLengthIs12, "", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ThemedMessageBox.Show(Language.MainForm.TruncateFileNames_MinimumLengthIs12, "", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -2558,7 +2570,7 @@ export results to text file
                     string.Format(Language.MainForm.TruncateFileNames_NotRenamed_Message, result.NotRenamed.Count, list);
             }
 
-            MessageBox.Show(message, "", MessageBoxButtons.OK, result.NotRenamed.Count == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+            ThemedMessageBox.Show(message, "", MessageBoxButtons.OK, result.NotRenamed.Count == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
         }
 
         private void SetLanguage()

@@ -194,7 +194,7 @@ namespace TaoSFV
             catch (PlatformNotSupportedException)
             {
                 // TODO: Localize
-                MessageBox.Show("This program requires Windows XP SP3, Windows Vista SP2, Windows 7 or later.", "", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ThemedMessageBox.Show("This program requires Windows XP SP3, Windows Vista SP2, Windows 7 or later.", "", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             catch (Exception ex)
@@ -234,7 +234,7 @@ namespace TaoSFV
         {
             if (e is FileNotFoundException && e.Message.Contains("System.Core"))
             {
-                DialogResult res = MessageBox.Show(Language.Startup.RequireNET35_Message, Language.General.Error, MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+                DialogResult res = ThemedMessageBox.Show(Language.Startup.RequireNET35_Message, Language.General.Error, MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
                 if (res == DialogResult.OK)
                 {
                     OpenUrl("https://dotnet.microsoft.com/download/dotnet");
@@ -314,7 +314,7 @@ namespace TaoSFV
         {
             var lang = Language.MainForm;
             string question = firstStart ? lang.ImportIlsfv_FirstStart_Message : lang.ImportIlsfv_Confirm_Message;
-            if (MessageBox.Show(owner, question, lang.ImportIlsfv_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+            if (ThemedMessageBox.Show(owner, question, lang.ImportIlsfv_Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return false;
 
             IlsfvImport.Result result;
@@ -330,12 +330,12 @@ namespace TaoSFV
             {
                 Cursor.Current = Cursors.Default;
                 Trace.WriteLine(ex);
-                MessageBox.Show(owner, string.Format(lang.ImportIlsfv_Error_Message, ex.Message), lang.ImportIlsfv_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ThemedMessageBox.Show(owner, string.Format(lang.ImportIlsfv_Error_Message, ex.Message), lang.ImportIlsfv_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
 
             Cursor.Current = Cursors.Default;
-            MessageBox.Show(owner, string.Format(lang.ImportIlsfv_Done_Message, result.FilesChecked, result.RecentFiles, result.CacheEntries),
+            ThemedMessageBox.Show(owner, string.Format(lang.ImportIlsfv_Done_Message, result.FilesChecked, result.RecentFiles, result.CacheEntries),
                 lang.ImportIlsfv_Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
             OfferCommentTemplateUpdate(owner);
             return true;
@@ -353,7 +353,7 @@ namespace TaoSFV
 
             string shown = (comments.Header + Environment.NewLine + comments.Footer).Trim();
             var lang = Language.MainForm;
-            if (MessageBox.Show(owner, string.Format(lang.UpdateCommentsTemplate_Message, shown), lang.UpdateCommentsTemplate_Title,
+            if (ThemedMessageBox.Show(owner, string.Format(lang.UpdateCommentsTemplate_Message, shown), lang.UpdateCommentsTemplate_Title,
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 

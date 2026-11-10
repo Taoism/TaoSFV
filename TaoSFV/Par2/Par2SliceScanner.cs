@@ -71,7 +71,8 @@ namespace TaoSFV.Par2
 					CheckTail(path, sliceSize, partial);
 			}
 
-			foreach (Par2FileResult result in results.Where(r => r.Locations != null))
+			// only damaged or missing files can have shifted slices (a renamed file's slices are simply in the other file)
+			foreach (Par2FileResult result in results.Where(r => r.Locations != null && (r.State == Par2FileState.Damaged || r.State == Par2FileState.Missing)))
 			{
 				string own = Path.Combine(set.Directory, result.File.Name);
 				int shifted = 0;

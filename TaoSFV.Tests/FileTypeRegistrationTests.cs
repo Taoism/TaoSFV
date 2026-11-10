@@ -60,6 +60,10 @@ namespace TaoSFV.Tests
 			Assert.Equal("\"" + Exe + "\" /create sfv \"%1\"", Value(@"TaoSFV.CreateMenu\shell\sfv\command"));
 			Assert.Equal("\"" + Exe + "\" /create md5 \"%1\"", Value(@"TaoSFV.CreateMenu\shell\md5\command"));
 			Assert.Equal("\"" + Exe + "\" /create sha1 \"%1\"", Value(@"TaoSFV.CreateMenu\shell\sha1\command"));
+
+			// .par2: an extra verb only, the default program stays
+			Assert.Equal("\"" + Exe + "\" \"%1\"", Value(FileTypeRegistration.Par2VerbKey + @"\command"));
+			Assert.Null(_classes.OpenSubKey(".par2"));
 		}
 
 		[Fact]
@@ -81,13 +85,14 @@ namespace TaoSFV.Tests
 			Assert.Equal(0, _classes.SubKeyCount - CountShellParents());
 			Assert.Null(_classes.OpenSubKey(@"*\shell\TaoSFV"));
 			Assert.Null(_classes.OpenSubKey(@"Directory\shell\TaoSFV"));
+			Assert.Null(_classes.OpenSubKey(FileTypeRegistration.Par2VerbKey));
 		}
 
 		// "*\shell" and "Directory\shell" parents may remain empty; everything else must be gone
 		private int CountShellParents()
 		{
 			int count = 0;
-			foreach (string name in new[] { "*", "Directory" })
+			foreach (string name in new[] { "*", "Directory", "SystemFileAssociations" })
 			{
 				if (_classes.OpenSubKey(name) != null)
 					count++;

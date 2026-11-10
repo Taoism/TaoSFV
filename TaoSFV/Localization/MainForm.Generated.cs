@@ -263,6 +263,99 @@ namespace TaoSFV.Localization
         ///<summary>The comments written at the top of new checksum files still mention ilSFV:\n\n{0}\n\nChange ilSFV to TaoSFV and cdtag.com links to TaoSFV's page?</summary>
         public string UpdateCommentsTemplate_Message { get; set; }
 
+        ///<summary>{0} - TaoSFV</summary>
+        public string Par2_Title { get; set; }
+
+        ///<summary>File</summary>
+        public string Par2_FileColumn { get; set; }
+
+        ///<summary>Size</summary>
+        public string Par2_SizeColumn { get; set; }
+
+        ///<summary>Status</summary>
+        public string Par2_StatusColumn { get; set; }
+
+        ///<summary>Blocks OK</summary>
+        public string Par2_BlocksColumn { get; set; }
+
+        ///<summary>Reading the PAR2 files...</summary>
+        public string Par2_Loading { get; set; }
+
+        ///<summary>Checking files...</summary>
+        public string Par2_Verifying { get; set; }
+
+        ///<summary>Repairing...</summary>
+        public string Par2_Repairing { get; set; }
+
+        ///<summary>{0} files, {1} blocks of {2}, {3} recovery blocks</summary>
+        public string Par2_SetInfo { get; set; }
+
+        ///<summary>OK</summary>
+        public string Par2_OK { get; set; }
+
+        ///<summary>OK, found as {0}</summary>
+        public string Par2_FoundAs { get; set; }
+
+        ///<summary>Damaged</summary>
+        public string Par2_Damaged { get; set; }
+
+        ///<summary>Missing</summary>
+        public string Par2_Missing { get; set; }
+
+        ///<summary>{0} (no recovery data)</summary>
+        public string Par2_NotProtected { get; set; }
+
+        ///<summary>{0} of {1}</summary>
+        public string Par2_BlocksCount { get; set; }
+
+        ///<summary>({0} shifted)</summary>
+        public string Par2_Shifted { get; set; }
+
+        ///<summary>All files are OK.</summary>
+        public string Par2_AllOk { get; set; }
+
+        ///<summary>{0} blocks damaged or missing, {1} recovery blocks available: repair is possible.</summary>
+        public string Par2_Repairable { get; set; }
+
+        ///<summary>{0} blocks damaged or missing, {1} recovery blocks available: {2} more needed to repair.</summary>
+        public string Par2_NotRepairable { get; set; }
+
+        ///<summary>A damaged file isn't covered by the recovery data, so it can't be repaired.</summary>
+        public string Par2_UnprotectedDamage { get; set; }
+
+        ///<summary>{0} damaged PAR2 packets were skipped.</summary>
+        public string Par2_DamagedPackets { get; set; }
+
+        ///<summary>&Repair</summary>
+        public string Par2_RepairButton { get; set; }
+
+        ///<summary>&Check Again</summary>
+        public string Par2_VerifyButton { get; set; }
+
+        ///<summary>Open &Folder</summary>
+        public string Par2_OpenFolderButton { get; set; }
+
+        ///<summary>&Stop</summary>
+        public string Par2_StopButton { get; set; }
+
+        ///<summary>Rebuild {0} file(s) from the recovery data?\n\nA damaged original is kept as name.bad, and files found under another name are moved back.</summary>
+        public string Par2_RepairConfirm { get; set; }
+
+        ///<summary>Repair complete: {0} file(s) rebuilt, {1} moved back to their name.</summary>
+        public string Par2_Repaired { get; set; }
+
+        ///<summary>Repair failed: {0}</summary>
+        public string Par2_RepairFailed { get; set; }
+
+        ///<summary>{0} couldn't be read as a PAR2 file.\n\n{1}</summary>
+        public string Par2_ReadError { get; set; }
+
+        ///<summary>Stopped.</summary>
+        public string Par2_Cancelled { get; set; }
+
+        ///<summary>Check with TaoSFV</summary>
+        public string Par2_ExplorerVerb { get; set; }
+
         ///<summary>Checksum Files Skipped</summary>
         public string SkippedChecksumFiles_Title { get; set; }
 

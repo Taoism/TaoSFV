@@ -61,7 +61,7 @@ namespace TaoSFV
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show(ex.Message, Language.ExceptionForm.SubmitBugError_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				ThemedMessageBox.Show(ex.Message, Language.ExceptionForm.SubmitBugError_Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 			}
 		}
 
