@@ -347,7 +347,8 @@ namespace TaoSFV.Par2
 			}
 			catch (DecoderFallbackException)
 			{
-				name = Encoding.GetEncoding(1252).GetString(bytes);
+				// straight from the provider: works whether or not the app registered it
+				name = CodePagesEncodingProvider.Instance.GetEncoding(1252).GetString(bytes);
 			}
 			return name.Replace('/', '\\');
 		}
