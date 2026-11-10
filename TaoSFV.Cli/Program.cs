@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TaoSFV.Hash;
 using TaoSFV.Model.Workset;
+using TaoSFV.Par2;
 using TaoSFV.Verification;
 
 namespace TaoSFV.Cli
@@ -24,6 +25,7 @@ XXH128 and BLAKE3 files.
 
 Usage:
   taosfv-cli verify <file-or-folder>... [options]
+  taosfv-cli verify <set.par2> [options]
   taosfv-cli create <sfv|md5|sha1|sha256|sha512|xxh128|blake3> <output-file> <file-or-folder>... [options]
 
 verify
@@ -32,6 +34,12 @@ verify
   renamed, deleted or created (--use-cache adds cache entries). Prints
   'name: OK', 'name: FAILED', 'name: MISSING' or 'name: READ ERROR', then a
   summary.
+
+verify with a .par2 file
+  Checks the files of the PAR2 recovery set (all .par2 files with the same
+  base name are read): OK, FOUND AS (renamed), DAMAGED (with the number of
+  bad blocks) or MISSING, then whether the recovery data is enough to repair
+  them. Nothing is changed.
 
 create
   Hashes the given files (folders include their subfolders) and writes the
@@ -98,6 +106,95 @@ Exit codes:
 		// ------------------------------------------------------------------ verify
 
 		private static int Verify(Options options)
+		{
+			// .par2 sets are checked on their own (recovery data, not a checksum list)
+			List<string> par2Files = options.Inputs.Where(i => File.Exists(i) && Par2Reader.IsPar2File(i)).Select(Path.GetFullPath).ToList();
+			if (par2Files.Count != 0)
+			{
+				int worst = ExitOk;
+				foreach (string par2 in par2Files)
+					worst = Math.Max(worst, VerifyPar2(par2, options));
+				if (par2Files.Count == options.Inputs.Count)
+					return worst;
+				options.Inputs.RemoveAll(i => File.Exists(i) && Par2Reader.IsPar2File(i));
+				return Math.Max(worst, VerifyChecksumFiles(options));
+			}
+			return VerifyChecksumFiles(options);
+		}
+
+		private static int VerifyPar2(string par2, Options options)
+		{
+			Par2Set set;
+			try
+			{
+				set = Par2Reader.Load(par2);
+			}
+			catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+			{
+				Console.Error.WriteLine("taosfv-cli: can't read " + par2 + ": " + ex.Message);
+				return ExitError;
+			}
+
+			long total = set.Files.Values.Where(f => f.HasDescription).Sum(f => f.Length);
+			long done = 0;
+			Stopwatch stopwatch = Stopwatch.StartNew();
+			Par2Result result;
+			using (Timer progress = StartProgress(() => Interlocked.Read(ref done), total))
+				result = Par2Verifier.Verify(set, _cancel.Token, n => Interlocked.Add(ref done, n));
+			ClearProgress();
+
+			if (!options.Status)
+			{
+				if (options.Inputs.Count > 1)
+					Console.WriteLine("== " + par2);
+				foreach (Par2FileResult file in result.Files)
+				{
+					string state;
+					switch (file.State)
+					{
+						case Par2FileState.OK:
+							state = "OK";
+							break;
+						case Par2FileState.Renamed:
+							state = "OK, FOUND AS " + Path.GetFileName(file.FoundAs);
+							break;
+						case Par2FileState.Damaged:
+							state = string.Format("DAMAGED ({0} of {1} blocks)", file.MissingSlices, file.TotalSlices);
+							break;
+						default:
+							state = "MISSING";
+							break;
+					}
+					if (!(options.Quiet && file.State == Par2FileState.OK))
+						Console.WriteLine(file.File.Name + ": " + state + (file.Protected ? "" : " (not covered by recovery data)"));
+				}
+
+				string summary = string.Format("{0} file{1}: {2} OK", result.Files.Count, result.Files.Count == 1 ? "" : "s",
+					result.Files.Count(f => f.State == Par2FileState.OK || f.State == Par2FileState.Renamed));
+				int damaged = result.Files.Count(f => f.State == Par2FileState.Damaged);
+				int missing = result.Files.Count(f => f.State == Par2FileState.Missing);
+				if (damaged != 0)
+					summary += ", " + damaged + " damaged";
+				if (missing != 0)
+					summary += ", " + missing + " missing";
+				summary += string.Format(" - {0} in {1:0.0} s", FormatBytes(done), stopwatch.Elapsed.TotalSeconds);
+				Console.WriteLine(summary);
+
+				if (!result.AllOk)
+				{
+					Console.WriteLine(string.Format("{0} block{1} needed, {2} recovery block{3} available: {4}",
+						result.SlicesNeeded, result.SlicesNeeded == 1 ? "" : "s",
+						result.RecoverySlicesAvailable, result.RecoverySlicesAvailable == 1 ? "" : "s",
+						result.Repairable ? "repair is possible" : "not enough to repair"));
+				}
+				if (set.DamagedPackets != 0)
+					Console.WriteLine(string.Format("{0} damaged PAR2 packet{1} skipped", set.DamagedPackets, set.DamagedPackets == 1 ? "" : "s"));
+			}
+
+			return result.Files.All(f => f.State == Par2FileState.OK || f.State == Par2FileState.Renamed) ? ExitOk : ExitFailed;
+		}
+
+		private static int VerifyChecksumFiles(Options options)
 		{
 			List<string> checksumFiles = new List<string>();
 			foreach (string input in options.Inputs)
@@ -372,13 +469,18 @@ Exit codes:
 
 		private static Timer StartProgress(VerifyContext context, long totalBytes)
 		{
+			return StartProgress(() => context.BytesProcessed, totalBytes);
+		}
+
+		private static Timer StartProgress(Func<long> bytesDone, long totalBytes)
+		{
 			if (!_showProgress || totalBytes == 0)
 				return null;
 
 			Stopwatch stopwatch = Stopwatch.StartNew();
 			return new Timer(_ =>
 			{
-				long done = context.BytesProcessed;
+				long done = bytesDone();
 				double seconds = Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
 				Console.Error.Write(string.Format("\r{0,3}%  {1} of {2}  {3}/s   ", Math.Min(100, done * 100 / totalBytes),
 					FormatBytes(done), FormatBytes(totalBytes), FormatBytes((long)(done / seconds))));
