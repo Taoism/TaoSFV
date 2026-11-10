@@ -26,6 +26,7 @@ XXH128 and BLAKE3 files.
 Usage:
   taosfv-cli verify <file-or-folder>... [options]
   taosfv-cli verify <set.par2> [options]
+  taosfv-cli repair <set.par2>
   taosfv-cli create <sfv|md5|sha1|sha256|sha512|xxh128|blake3> <output-file> <file-or-folder>... [options]
 
 verify
@@ -40,6 +41,12 @@ verify with a .par2 file
   base name are read): OK, FOUND AS (renamed), DAMAGED (with the number of
   bad blocks) or MISSING, then whether the recovery data is enough to repair
   them. Nothing is changed.
+
+repair
+  Verifies the PAR2 set, then rebuilds damaged and missing files from the
+  recovery data and moves renamed files back. A rebuilt file is checked
+  against its MD5 before it replaces anything; a damaged original is kept
+  as name.bad.
 
 create
   Hashes the given files (folders include their subfolders) and writes the
@@ -92,6 +99,8 @@ Exit codes:
 					return error == null ? ExitOk : ExitError;
 				}
 
+				if (options.Command == "repair")
+					return Repair(options);
 				return options.Command == "create" ? Create(options) : Verify(options);
 			}
 			catch (Exception ex) when (ex is OperationCanceledException ||
@@ -192,6 +201,55 @@ Exit codes:
 			}
 
 			return result.Files.All(f => f.State == Par2FileState.OK || f.State == Par2FileState.Renamed) ? ExitOk : ExitFailed;
+		}
+
+		private static int Repair(Options options)
+		{
+			string par2 = Path.GetFullPath(options.Inputs[0]);
+			if (!File.Exists(par2))
+				return Fail("not found: " + par2);
+
+			int verified = VerifyPar2(par2, options);
+			if (verified == ExitOk)
+			{
+				Console.WriteLine("nothing to repair");
+				return ExitOk;
+			}
+			if (verified == ExitError)
+				return ExitError;
+
+			Par2Set set = Par2Reader.Load(par2);
+			Par2Result result = Par2Verifier.Verify(set, _cancel.Token);
+			if (!result.Repairable)
+				return ExitFailed;
+
+			long total = set.SliceSize * (result.Set.RecoveryFiles.Sum(f => (long)f.SliceCount(set.SliceSize)));
+			long done = 0;
+			Stopwatch stopwatch = Stopwatch.StartNew();
+			Par2RepairResult repaired;
+			try
+			{
+				using (Timer progress = StartProgress(() => Interlocked.Read(ref done), total))
+					repaired = Par2Repairer.Repair(result, _cancel.Token, n => Interlocked.Add(ref done, n));
+			}
+			catch (Exception ex) when (ex is InvalidOperationException || ex is InvalidDataException || ex is IOException || ex is UnauthorizedAccessException)
+			{
+				ClearProgress();
+				Console.Error.WriteLine("taosfv-cli: repair failed: " + ex.Message);
+				return ExitFailed;
+			}
+			ClearProgress();
+
+			foreach (string file in repaired.Repaired)
+				Console.WriteLine("repaired: " + file);
+			foreach (string file in repaired.Renamed)
+				Console.WriteLine("renamed back: " + file);
+			foreach (string file in repaired.KeptDamaged)
+				Console.WriteLine("damaged original kept as: " + file);
+
+			bool ok = Par2Verifier.Verify(Par2Reader.Load(par2), _cancel.Token).AllOk;
+			Console.WriteLine(ok ? string.Format("repair complete in {0:0.0} s, all files OK", stopwatch.Elapsed.TotalSeconds) : "repair finished, but files still don't verify");
+			return ok ? ExitOk : ExitFailed;
 		}
 
 		private static int VerifyChecksumFiles(Options options)
@@ -589,6 +647,15 @@ Exit codes:
 					if (options.Inputs.Count == 0)
 					{
 						error = "verify needs at least one checksum file or folder";
+						return false;
+					}
+				}
+				else if (options.Command == "repair")
+				{
+					options.Inputs.AddRange(positional.Skip(1));
+					if (options.Inputs.Count != 1 || !Par2Reader.IsPar2File(options.Inputs[0]))
+					{
+						error = "repair needs one .par2 file";
 						return false;
 					}
 				}

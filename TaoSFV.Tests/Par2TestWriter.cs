@@ -16,7 +16,8 @@ namespace TaoSFV.Tests
 	/// </summary>
 	internal static class Par2TestWriter
 	{
-		public static void Write(string par2Path, string directory, IList<string> relativeNames, int sliceSize, int recoverySlices = 0)
+		public static void Write(string par2Path, string directory, IList<string> relativeNames, int sliceSize, int recoverySlices = 0,
+			bool realRecovery = false)
 		{
 			List<byte[]> packets = new List<byte[]>();
 			List<Tuple<byte[], byte[], byte[]>> files = new List<Tuple<byte[], byte[], byte[]>>(); // id, desc body, ifsc body
@@ -66,17 +67,40 @@ namespace TaoSFV.Tests
 				packets.Add(Packet(setId, Par2Reader.IfscType, f.Item3));
 			}
 			packets.Add(Packet(setId, Par2Reader.CreatorType, Encoding.ASCII.GetBytes("TaoSFV tests")));
+			File.WriteAllBytes(par2Path, Concat(packets.ToArray()));
 
-			Random random = new Random(1);
-			for (int e = 0; e < recoverySlices; e++)
+			if (recoverySlices == 0)
+				return;
+
+			// real parity from the encoder, or placeholder bytes (enough for counting slices)
+			byte[][] parity;
+			if (realRecovery)
 			{
-				byte[] body = new byte[4 + sliceSize];
-				BinaryPrimitives.WriteInt32LittleEndian(body, e);
-				random.NextBytes(body.AsSpan(4));
-				packets.Add(Packet(setId, Par2Reader.RecoverySliceType, body));
+				Par2Set set = Par2Reader.Load(new[] { par2Path }, directory);
+				parity = Par2Encoder.ComputeRecovery(set, Enumerable.Range(0, recoverySlices).ToList());
+			}
+			else
+			{
+				Random random = new Random(1);
+				parity = new byte[recoverySlices][];
+				for (int e = 0; e < recoverySlices; e++)
+				{
+					parity[e] = new byte[sliceSize];
+					random.NextBytes(parity[e]);
+				}
 			}
 
-			File.WriteAllBytes(par2Path, Concat(packets.ToArray()));
+			using (FileStream stream = new FileStream(par2Path, FileMode.Append))
+			{
+				for (int e = 0; e < recoverySlices; e++)
+				{
+					byte[] body = new byte[4 + sliceSize];
+					BinaryPrimitives.WriteInt32LittleEndian(body, e);
+					parity[e].CopyTo(body, 4);
+					byte[] packet = Packet(setId, Par2Reader.RecoverySliceType, body);
+					stream.Write(packet, 0, packet.Length);
+				}
+			}
 		}
 
 		public static byte[] Packet(byte[] setId, byte[] type, byte[] body)
