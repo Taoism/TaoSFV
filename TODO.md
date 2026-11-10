@@ -36,8 +36,9 @@ Roughly in priority order within each section. Check items off (`[x]`) as they'r
       drives/shares), e.g. for RAID arrays or slow USB sticks. The CLI already has `--threads`.
 - [ ] **Faster hash types.** XXH3 and/or BLAKE3 as options for large libraries (less widely supported elsewhere).
 - [x] **CLI cache option.** `taosfv-cli verify --use-cache` to reuse the GUI's checksum cache (it never uses it now).
-- [ ] **Where Create puts the file for a folder.** Right-click a folder > Create SFV writes `<parent>\<parent>.sfv`
+- [x] **Where Create puts the file for a folder.** Right-click a folder > Create SFV writes `<parent>\<parent>.sfv`
       (ilSFV's behaviour). Consider writing `<folder>\<folder>.sfv` instead, or asking.
+      (Done: a single folder gets `<folder>\<folder>.sfv`; files or several items still use the folder they're in.)
 - [ ] **PAR2 repair (large).** Rebuild damaged files from recovery data, QuickPar-style, not just detect them.
 
 ## Polish

@@ -1695,10 +1695,10 @@ export results to text file
             }
             else
             {
-                path = Path.GetDirectoryName(files[0]);
+                path = CreateLocation.GetFolder(files);
             }
 
-            string fileName = Path.GetFileName(path);
+            string fileName = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar));
             if (string.IsNullOrEmpty(fileName))
                 fileName = path[0].ToString();
             fileName = string.Format("{0}.{1}", fileName, ext);
