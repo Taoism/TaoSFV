@@ -19,7 +19,36 @@ TaoSFV is made in tribute to ilSFV and hkSFV. It continues [ilSFV](https://githu
 - Dark mode (Preferences → General → Theme: System default / Light / Dark)
 - Checks several files at once on SSDs (one at a time on hard drives and network shares)
 - Verify a whole folder tree: File → Verify Folder, drag a folder in, or right-click a folder → TaoSFV → Verify checksum files
+- PAR2 recovery sets: open a `.par2` to check its files (damaged, missing, renamed, or with shifted blocks) and repair them from the recovery data, in TaoSFV's own code (no par2cmdline needed); right-click a `.par2` → Check with TaoSFV
 - `taosfv-cli` for scripts and scheduled checks
+
+## Screenshots
+
+Dark and light mode (Preferences → General → Theme, or follow Windows). The album is made-up demo data: one track damaged, one missing.
+
+| Dark | Light |
+|---|---|
+| ![Main window, dark](screenshots/dark/main.png) | ![Main window, light](screenshots/light/main.png) |
+| ![PAR2 window, dark](screenshots/dark/par2.png) | ![PAR2 window, light](screenshots/light/par2.png) |
+
+<details>
+<summary>Every window, menu and Preferences tab</summary>
+
+| | Dark | Light |
+|---|---|---|
+| Message box | <img src="screenshots/dark/par2-repair-confirm.png" width="360"> | <img src="screenshots/light/par2-repair-confirm.png" width="360"> |
+| File menu | <img src="screenshots/dark/menu-file.png" width="360"> | <img src="screenshots/light/menu-file.png" width="360"> |
+| Legend menu | <img src="screenshots/dark/menu-legend.png" width="360"> | <img src="screenshots/light/menu-legend.png" width="360"> |
+| Tools menu | <img src="screenshots/dark/menu-tools.png" width="360"> | <img src="screenshots/light/menu-tools.png" width="360"> |
+| View menu | <img src="screenshots/dark/menu-view.png" width="360"> | <img src="screenshots/light/menu-view.png" width="360"> |
+| Preferences: General | <img src="screenshots/dark/preferences-general.png" width="360"> | <img src="screenshots/light/preferences-general.png" width="360"> |
+| Preferences: Checking | <img src="screenshots/dark/preferences-checking.png" width="360"> | <img src="screenshots/light/preferences-checking.png" width="360"> |
+| Preferences: Creating | <img src="screenshots/dark/preferences-creating.png" width="360"> | <img src="screenshots/light/preferences-creating.png" width="360"> |
+| Preferences: Comments | <img src="screenshots/dark/preferences-comments.png" width="360"> | <img src="screenshots/light/preferences-comments.png" width="360"> |
+| Preferences: About | <img src="screenshots/dark/preferences-about.png" width="360"> | <img src="screenshots/light/preferences-about.png" width="360"> |
+| Scheduled Checks | <img src="screenshots/dark/schedule-checks.png" width="360"> | <img src="screenshots/light/schedule-checks.png" width="360"> |
+
+</details>
 
 ## Download
 
@@ -42,7 +71,7 @@ taosfv-cli repair D:\Downloads\set.par2   # rebuild them from the recovery data
 - `--threads N` overrides how many files are read at once.
 - Verifying never renames, deletes or creates files.
 - `--use-cache` reuses TaoSFV's result cache (`%LOCALAPPDATA%\TaoSFV\cache.db`): a file whose size and modified time haven't changed since it was last checked counts as OK without being read, and new results are added. Faster, but it won't notice damage that left both unchanged. Without the option, every file is read.
-- `verify` and `repair` read PAR2 recovery sets (all `.par2` files with the same base name). Repair rebuilds damaged and missing files with TaoSFV's own PAR2 code (no par2cmdline needed), checks each against its MD5 before replacing anything, keeps a damaged original as `name.bad` and moves renamed files back. Its recovery data matches par2cmdline's byte for byte. The GUI doesn't open `.par2` files yet.
+- `verify` and `repair` read PAR2 recovery sets (all `.par2` files with the same base name). Repair rebuilds damaged and missing files with TaoSFV's own PAR2 code (no par2cmdline needed), checks each against its MD5 before replacing anything, keeps a damaged original as `name.bad` and moves renamed files back. Its recovery data matches par2cmdline's byte for byte. In TaoSFV itself, open a `.par2` (File → Open, drag it in, or right-click → Check with TaoSFV; after updating, Tools → Register File Types adds that menu).
 - `create` writes md5sum-style files with `/` separators and LF line endings, so `md5sum -c` and `sha256sum -c` read them.
 
 ## Building
